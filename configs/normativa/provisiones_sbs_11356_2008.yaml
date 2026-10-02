@@ -1,0 +1,62 @@
+# Tablas normativas usadas por las herramientas deterministas.
+# Fuente: Resolución SBS N° 11356-2008, texto consolidado publicado por la SBS.
+# URL: https://www.sbs.gob.pe/portals/0/jer/pfrpv_normatividad/20160719_res-11356-2008.pdf
+# Las cifras se transcribieron de ese PDF (Capítulo II, numerales 3 y 4; Capítulo III, numeral 2.1).
+# IMPORTANTE: la norma tiene modificaciones posteriores. Antes de usar en producción,
+# verificar la versión vigente y actualizar "verificado_en" y "version_texto".
+
+norma: "Res. SBS 11356-2008"
+version_texto: "Texto consolidado publicado por la SBS (archivo 20160719)"
+url: "https://www.sbs.gob.pe/portals/0/jer/pfrpv_normatividad/20160719_res-11356-2008.pdf"
+verificado_en: "2026-10-01"
+alcance: >
+  Cálculo simplificado con fines educativos y de demostración. No incluye el componente
+  procíclico (Capítulo III, numeral 2.3 y Anexo I), ni tratamientos especiales
+  (reprogramaciones, créditos refinanciados o reestructurados, alineamiento, etc.).
+
+tipos_credito:
+  corporativos: {grupo: no_minorista, generica: 0.70}
+  grandes_empresas: {grupo: no_minorista, generica: 0.70}
+  medianas_empresas: {grupo: no_minorista, generica: 1.00}
+  pequenas_empresas: {grupo: minorista, generica: 1.00}
+  microempresas: {grupo: minorista, generica: 1.00}
+  consumo_revolvente: {grupo: minorista, generica: 1.00}
+  consumo_no_revolvente: {grupo: minorista, generica: 1.00}
+  hipotecarios_vivienda: {grupo: hipotecario, generica: 0.70}
+
+# Días de atraso (calendario) por categoría. [desde, hasta]; null = sin límite.
+clasificacion_por_atraso:
+  minorista:
+    referencia: "Capítulo II, numeral 3"
+    Normal: [0, 8]
+    CPP: [9, 30]
+    Deficiente: [31, 60]
+    Dudoso: [61, 120]
+    Pérdida: [121, null]
+  hipotecario:
+    referencia: "Capítulo II, numeral 4"
+    Normal: [0, 30]
+    CPP: [31, 60]
+    Deficiente: [61, 120]
+    Dudoso: [121, 365]
+    Pérdida: [366, null]
+  no_minorista:
+    referencia: "Capítulo II, numeral 2"
+    nota: >
+      Para deudores no minoristas la clasificación se basa principalmente en la capacidad de
+      pago y el flujo de caja; los días de atraso no bastan. La herramienta no clasifica este
+      grupo solo por atraso.
+
+# Tasas de provisión específica (%) por categoría (Capítulo III, numeral 2.1).
+provision_especifica:
+  referencia: "Capítulo III, numeral 2.1"
+  tabla_1: {CPP: 5.00, Deficiente: 25.00, Dudoso: 60.00, Pérdida: 100.00}
+  tabla_2: {CPP: 2.50, Deficiente: 12.50, Dudoso: 30.00, Pérdida: 60.00}
+  tabla_3: {CPP: 1.25, Deficiente: 6.25, Dudoso: 15.00, Pérdida: 30.00}
+
+# Qué tabla aplica según la cobertura de garantías.
+# PENDIENTE DE VERIFICAR contra el texto vigente antes de usar fuera del portafolio.
+uso_tablas:
+  sin_garantia_preferida: tabla_1
+  garantia_preferida: tabla_2
+  garantia_preferida_muy_rapida_realizacion: tabla_3

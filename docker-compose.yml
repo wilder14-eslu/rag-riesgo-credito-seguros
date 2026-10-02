@@ -1,0 +1,41 @@
+# Entorno local con PostgreSQL + pgvector (sin AWS). Uso: make up
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: riskrag
+      POSTGRES_USER: riskrag
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cambia-esta-clave-local}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./sql:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U riskrag"]
+      interval: 5s
+      retries: 10
+
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      RISKRAG_ENV: local
+      RISKRAG_VECTOR_BACKEND: pgvector
+      RISKRAG_PG_DSN: "host=db port=5432 user=riskrag password=${POSTGRES_PASSWORD:-cambia-esta-clave-local} dbname=riskrag"
+      RISKRAG_AUDIT_LOG_PATH: /tmp/audit/audit.jsonl
+      RISKRAG_CREDIT_MODEL_URL: ${RISKRAG_CREDIT_MODEL_URL:-}
+    ports:
+      - "127.0.0.1:8000:8000"
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+volumes:
+  pgdata:

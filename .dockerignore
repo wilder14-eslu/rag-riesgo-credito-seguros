@@ -1,0 +1,13 @@
+.git
+.venv
+**/__pycache__
+**/*.pyc
+.env
+data/raw
+data/processed
+logs
+infra
+tests
+docs
+*.md
+!README.md

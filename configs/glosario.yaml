@@ -1,0 +1,63 @@
+# Glosario del dominio. Se usa para: expansión de consultas (sinónimos y siglas),
+# respuestas directas de la herramienta "glosario" y desambiguación.
+# Definiciones redactadas con fines educativos; revisar contra la norma aplicable.
+
+terminos:
+  - termino: "Probabilidad de incumplimiento (PD)"
+    sinonimos: ["PD", "probabilidad de default", "probabilidad de impago"]
+    definicion: "Probabilidad de que un deudor incumpla sus obligaciones en un horizonte dado, usualmente 12 meses."
+  - termino: "Pérdida dado el incumplimiento (LGD)"
+    sinonimos: ["LGD", "severidad", "loss given default"]
+    definicion: "Proporción de la exposición que se pierde si el deudor incumple, después de recuperaciones y garantías."
+  - termino: "Exposición al incumplimiento (EAD)"
+    sinonimos: ["EAD", "exposure at default"]
+    definicion: "Monto expuesto al riesgo en el momento del incumplimiento, incluyendo usos esperados de líneas no dispuestas."
+  - termino: "Pérdida esperada"
+    sinonimos: ["ECL", "expected credit loss", "perdida crediticia esperada"]
+    definicion: "Promedio ponderado de pérdidas crediticias; en su forma simple, PD por LGD por EAD."
+  - termino: "Con Problemas Potenciales (CPP)"
+    sinonimos: ["CPP", "problemas potenciales"]
+    definicion: "Segunda categoría de clasificación del deudor (categoría 1), por encima de Normal y por debajo de Deficiente."
+    fuente: "Res. SBS 11356-2008, Capítulo II"
+  - termino: "Provisión genérica"
+    sinonimos: ["provisiones genericas"]
+    definicion: "Provisión constituida sobre créditos de deudores clasificados en categoría Normal."
+    fuente: "Res. SBS 11356-2008, Capítulo III"
+  - termino: "Provisión específica"
+    sinonimos: ["provisiones especificas"]
+    definicion: "Provisión constituida sobre créditos de deudores clasificados en una categoría de mayor riesgo que Normal."
+    fuente: "Res. SBS 11356-2008, Capítulo III"
+  - termino: "Componente procíclico"
+    sinonimos: ["prociclica", "provision prociclica", "provisiones prociclicas"]
+    definicion: "Provisión adicional que se activa o desactiva según reglas macroeconómicas para suavizar el ciclo crediticio."
+    fuente: "Res. SBS 11356-2008, Anexo I"
+  - termino: "Crédito refinanciado"
+    sinonimos: ["refinanciado", "refinanciamiento"]
+    definicion: "Crédito cuyas condiciones de plazo o monto se modifican por dificultades en la capacidad de pago del deudor."
+  - termino: "Crédito reestructurado"
+    sinonimos: ["reestructurado", "reestructuracion"]
+    definicion: "Crédito cuyo cronograma se modifica en el marco de un procedimiento concursal."
+  - termino: "Castigo"
+    sinonimos: ["castigo de creditos", "write-off"]
+    definicion: "Retiro contable del balance de un crédito considerado irrecuperable, una vez provisionado."
+  - termino: "Cartera atrasada"
+    sinonimos: ["morosidad", "mora"]
+    definicion: "Créditos vencidos y en cobranza judicial; su ratio sobre las colocaciones es un indicador de morosidad."
+  - termino: "IFRS 9"
+    sinonimos: ["NIIF 9", "IFRS9", "NIIF9"]
+    definicion: "Norma contable de instrumentos financieros que exige provisiones por pérdida crediticia esperada en tres etapas."
+  - termino: "IFRS 17"
+    sinonimos: ["NIIF 17", "IFRS17", "NIIF17"]
+    definicion: "Norma contable de contratos de seguro; introduce el margen de servicio contractual (CSM)."
+  - termino: "Margen de servicio contractual (CSM)"
+    sinonimos: ["CSM", "contractual service margin"]
+    definicion: "Ganancia no devengada de un grupo de contratos de seguro que se reconoce a medida que se presta el servicio."
+  - termino: "Siniestralidad"
+    sinonimos: ["ratio de siniestralidad", "loss ratio"]
+    definicion: "Relación entre siniestros incurridos y primas devengadas en un periodo."
+  - termino: "Reaseguro"
+    sinonimos: ["reaseguradora", "reinsurance"]
+    definicion: "Transferencia de parte del riesgo de una aseguradora a una reaseguradora."
+  - termino: "Basilea III"
+    sinonimos: ["Basel III", "Basilea 3"]
+    definicion: "Marco internacional del Comité de Basilea sobre capital, liquidez y apalancamiento bancario."

@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Secretos y configuración local
+.env
+*.pem
+infra/terraform/terraform.tfvars
+infra/terraform/.terraform/
+infra/terraform/*.tfstate*
+infra/terraform/.terraform.lock.hcl
+
+# Datos y artefactos generados
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+logs/
+eval/reports/*
+!eval/reports/.gitkeep
+
+# rsc-harness: estado local de la máquina (sí se versionan .rsc.json, 01-TOOLS y 02-DOCS)
+.rsc/

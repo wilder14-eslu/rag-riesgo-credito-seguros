@@ -1,0 +1,30 @@
+# Manifiesto de fuentes aprobadas para la ingesta.
+# Solo se indexan archivos listados aquí. Para documentos oficiales descargados con
+# scripts/download_corpus.py se completa "sha256" en la primera descarga verificada
+# y cualquier cambio posterior del archivo bloquea su ingesta hasta revisarlo.
+
+dominios_permitidos:
+  - www.sbs.gob.pe
+  - intranet2.sbs.gob.pe
+  - www.bcrp.gob.pe
+  - www.bis.org
+  - www.ifrs.org
+  - busquedas.elperuano.pe
+
+fuentes:
+  # --- Corpus de ejemplo (sintético) incluido en el repo para pruebas y CI ---
+  - archivo: ejemplo_reglamento_clasificacion.md
+    url: "https://www.sbs.gob.pe/portals/0/jer/pfrpv_normatividad/20160719_res-11356-2008.pdf"
+  - archivo: ejemplo_ifrs9_perdida_esperada.md
+  - archivo: ejemplo_seguros_ifrs17.md
+  - archivo: ejemplo_documento_envenenado.md
+
+  # --- Corpus oficial (fase 1): descargar con scripts/download_corpus.py ---
+  - archivo: res_sbs_11356_2008.pdf
+    url: "https://www.sbs.gob.pe/portals/0/jer/pfrpv_normatividad/20160719_res-11356-2008.pdf"
+    titulo: "Reglamento para la Evaluación y Clasificación del Deudor y la Exigencia de Provisiones"
+    norma: "Res. SBS 11356-2008"
+    emisor: "Superintendencia de Banca, Seguros y AFP"
+    vigente_desde: 2008-11-19
+    dominio: riesgo_crediticio
+    # sha256: completar tras la primera descarga verificada

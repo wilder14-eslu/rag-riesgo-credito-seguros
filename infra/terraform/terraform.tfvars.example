@@ -1,0 +1,9 @@
+# Copiar a terraform.tfvars (ignorado por git) y completar.
+environment           = "dev"
+region                = "us-east-1"
+container_image_tag   = "sha-abc1234"
+acm_certificate_arn   = "arn:aws:acm:us-east-1:111111111111:certificate/xxxx"
+app_domain            = "riskrag.midominio.com"
+cognito_domain_prefix = "riskrag-dev-wilder"
+alert_email           = "tu-correo@ejemplo.com"
+monthly_budget_usd    = 50

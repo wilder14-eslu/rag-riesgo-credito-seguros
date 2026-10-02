@@ -1,0 +1,10 @@
+# Umbrales que bloquean el avance en CI (puertas de calidad del plan).
+# Con el corpus de ejemplo y el LLM extractivo; se recalibran con el corpus oficial y Bedrock.
+recall_at_5: 0.85
+mrr: 0.60
+intent_accuracy: 0.85
+key_facts_coverage: 0.70
+citation_accuracy: 0.85
+abstention_accuracy: 0.90
+faithfulness: 0.90
+adversarial_containment: 0.95

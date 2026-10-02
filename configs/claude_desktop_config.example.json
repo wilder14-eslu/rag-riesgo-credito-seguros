@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "rag-normativa": {
+      "command": "C:\\ruta\\al\\proyecto\\.venv\\Scripts\\python.exe",
+      "args": ["-m", "riskrag.mcp_servers.rag_normativa"],
+      "env": { "RISKRAG_ENV": "local" }
+    },
+    "riesgo-credito": {
+      "command": "C:\\ruta\\al\\proyecto\\.venv\\Scripts\\python.exe",
+      "args": ["-m", "riskrag.mcp_servers.riesgo_credito"],
+      "env": {
+        "RISKRAG_ENV": "local",
+        "RISKRAG_CREDIT_MODEL_URL": "https://credit-risk-api-mdix.onrender.com"
+      }
+    }
+  }
+}
