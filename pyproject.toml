@@ -43,6 +43,7 @@ riskrag = ["py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = [".", "src"]  # permite importar el paquete eval/ al correr "pytest" sin "python -m"
 addopts = "-q"
 
 [tool.ruff]
