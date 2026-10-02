@@ -8,6 +8,11 @@ RUN pip install --prefix=/install ".[aws,pg]"
 
 FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 RISKRAG_PROJECT_ROOT=/app
+# Aplica parches de seguridad del sistema publicados después de la imagen base
+RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 RUN groupadd --gid 10001 app && useradd --uid 10001 --gid app --no-create-home --shell /usr/sbin/nologin app
 WORKDIR /app
 COPY --from=build /install /usr/local
