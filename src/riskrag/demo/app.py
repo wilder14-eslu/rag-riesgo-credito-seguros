@@ -1,7 +1,7 @@
 """Aplicación de la demo: la API de FastAPI con una interfaz Gradio montada en /demo.
 
 Uso local:  uvicorn riskrag.demo.app:app --port 7860
-En Hugging Face Spaces la arranca space/Dockerfile.
+En Render la arranca Dockerfile.demo (render.yaml).
 """
 
 from __future__ import annotations

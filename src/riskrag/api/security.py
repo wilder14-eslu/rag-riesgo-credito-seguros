@@ -163,11 +163,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Referrer-Policy"] = "no-referrer"
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         if request.url.path.startswith(UI_PATHS):
-            # Swagger y la demo cargan scripts y estilos; la demo se muestra dentro de
-            # huggingface.co, así que solo ese sitio puede enmarcarla.
-            response.headers["Content-Security-Policy"] = (
-                "frame-ancestors 'self' https://huggingface.co"
-            )
+            # Swagger y la demo cargan scripts y estilos propios; solo se evita que otro
+            # sitio las enmarque (clickjacking).
+            response.headers["Content-Security-Policy"] = "frame-ancestors 'self'"
             return response
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Cache-Control"] = "no-store"

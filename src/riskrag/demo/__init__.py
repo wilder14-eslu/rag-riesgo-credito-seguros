@@ -1,1 +1,1 @@
-"""Demo pública (Hugging Face Spaces): interfaz Gradio sobre la misma API."""
+"""Demo pública (Render): interfaz Gradio sobre la misma API."""

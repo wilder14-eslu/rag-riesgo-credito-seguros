@@ -1,12 +1,11 @@
-# Imagen de la demo para Hugging Face Spaces (SDK Docker). Modo local: sin Azure y sin costo.
-# El workflow deploy-space.yml la copia como Dockerfile en la raíz del Space.
+# Imagen de la demo pública en Render (plan gratuito). Modo local: sin Azure y sin costo.
+# La usa render.yaml. La imagen de producción en Azure es el Dockerfile principal.
 FROM python:3.12-slim
 
 ENV PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 
-# Spaces ejecuta el contenedor con el usuario 1000
-RUN useradd --create-home --uid 1000 user
+RUN useradd --create-home --uid 10001 app
 WORKDIR /app
 
 COPY pyproject.toml README.md ./
@@ -26,8 +25,9 @@ ENV RISKRAG_PROJECT_ROOT=/app \
     FORWARDED_ALLOW_IPS="*" \
     GRADIO_ANALYTICS_ENABLED=False
 
-USER user
-EXPOSE 7860
+USER 10001
+EXPOSE 10000
 
 # El índice se construye al arrancar (unos segundos) y luego se sirve la API con la demo en /demo
-CMD ["sh", "-c", "python -m riskrag.cli ingest data/sample && exec uvicorn riskrag.demo.app:app --host 0.0.0.0 --port 7860 --proxy-headers --no-server-header"]
+# Render define PORT (10000 por defecto)
+CMD ["sh", "-c", "python -m riskrag.cli ingest data/sample && exec uvicorn riskrag.demo.app:app --host 0.0.0.0 --port ${PORT:-10000} --proxy-headers --no-server-header"]

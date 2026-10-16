@@ -51,7 +51,6 @@ def test_demo_mounts_ui_without_breaking_api(services, monkeypatch):
     client = TestClient(demo_app.app)
     ui = client.get("/demo/")
     assert ui.status_code == 200
-    assert "frame-ancestors 'self' https://huggingface.co" in ui.headers["content-security-policy"]
-    assert "x-frame-options" not in ui.headers
+    assert ui.headers["content-security-policy"] == "frame-ancestors 'self'"
     api = client.get("/health")
     assert api.headers["x-frame-options"] == "DENY"

@@ -1,0 +1,16 @@
+# Blueprint de Render: demo pública gratuita con los backends locales (sin Azure, sin costo).
+# Interfaz Gradio en /demo y API con Swagger en /docs. Se actualiza cuando CI pasa en main.
+# La versión con Azure OpenAI se despliega con infra/terraform (docs/09_despliegue_azure.md).
+services:
+  - type: web
+    name: riskrag-demo
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile.demo
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: RISKRAG_CREDIT_MODEL_URL
+        value: https://credit-risk-api-mdix.onrender.com
