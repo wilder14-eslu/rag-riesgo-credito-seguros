@@ -6,7 +6,7 @@
 ![MCP](https://img.shields.io/badge/MCP-2%20servidores-6b6a66)
 ![Azure](https://img.shields.io/badge/Azure-OpenAI%20%7C%20PostgreSQL%20pgvector%20%7C%20Container%20Apps-0078D4?logo=microsoftazure&logoColor=white)
 ![Terraform](https://img.shields.io/badge/Terraform-IaC-7B42BC?logo=terraform&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-82%20%C2%B7%2089%25%20cobertura-2ea44f)
+![Tests](https://img.shields.io/badge/tests-88%20%C2%B7%2089%25%20cobertura-2ea44f)
 
 > Un asistente que responde preguntas de normativa de riesgo crediticio y seguros **citando el capítulo y numeral exacto**, que **se abstiene antes que inventar**, que **nunca deja que el LLM haga cálculos regulatorios** y que expone todo como **herramientas MCP** para agentes de IA.
 
@@ -16,8 +16,14 @@
 | --- | --- |
 | **Problema** | En banca y seguros, una cifra regulatoria mal citada es peor que no responder. Un RAG genérico inventa porcentajes, corta las normas sin sentido y es vulnerable a documentos con instrucciones ocultas. |
 | **Solución** | RAG híbrido (denso + BM25 + RRF) sobre normas segmentadas por su estructura legal, verificación de cada oración contra su fuente, cálculos deterministas sobre tablas de la Res. SBS 11356-2008 verificadas contra el PDF oficial y seguridad mapeada al OWASP Top 10 para LLM 2025. |
-| **Evidencia** | 8 métricas con umbrales que bloquean CI, incluida una prueba adversaria de 12 ataques; 82 pruebas automáticas; escaneo de dependencias, imagen, secretos e infraestructura en cada push. |
+| **Evidencia** | 8 métricas con umbrales que bloquean CI, incluida una prueba adversaria de 12 ataques; 88 pruebas automáticas; escaneo de dependencias, imagen, secretos e infraestructura en cada push. |
 | **Stack** | Python, FastAPI, MCP SDK, PostgreSQL + pgvector, Azure OpenAI (GPT y embeddings), Azure AI Content Safety (Prompt Shields), Azure Container Apps, Azure Database for PostgreSQL, Front Door con WAF, Microsoft Entra ID, Key Vault, Terraform, GitHub Actions. |
+
+## Demo
+
+![Demo de RiskRAG: pregunta de provisión respondida con la herramienta determinista y la cita de la norma](docs/img/demo.png)
+
+Demo pública gratuita en Hugging Face Spaces con los backends locales (sin Azure): interfaz para preguntar, clasificar deudores y calcular provisiones, más la API en `/docs`. Detalle en [`docs/10_demo_hugging_face.md`](docs/10_demo_hugging_face.md).
 
 ## Qué hace, con ejemplos reales
 
@@ -144,14 +150,16 @@ La infraestructura completa está en Terraform ([`infra/terraform/`](infra/terra
 │   ├── tools/           # clasificación, provisiones, cliente del modelo de default
 │   ├── agent/           # orquestador local y agente con function calling en Azure OpenAI
 │   ├── mcp_servers/     # rag-normativa y riesgo-credito
+│   ├── demo/            # interfaz Gradio de la demo pública
 │   └── api/             # FastAPI con autenticación y cabeceras de seguridad
 ├── configs/             # fuentes aprobadas, glosario, tablas normativas
 ├── data/sample/         # corpus de ejemplo (sintético)
 ├── eval/                # conjuntos de prueba, métricas, umbrales
 ├── sql/                 # esquema pgvector y búsqueda híbrida en SQL
 ├── infra/terraform/     # infraestructura Azure
+├── space/               # Dockerfile y tarjeta del Space de Hugging Face
 ├── docs/                # análisis, arquitectura, NLP, seguridad, evaluación, MCP, ADR
-└── tests/               # 82 pruebas
+└── tests/               # 88 pruebas
 ```
 
 ## Documentación
@@ -164,6 +172,7 @@ La infraestructura completa está en Terraform ([`infra/terraform/`](infra/terra
 | [Seguridad](docs/04_seguridad.md) | Modelo de amenazas OWASP LLM 2025 y STRIDE |
 | [Evaluación](docs/05_evaluacion.md) | Métricas, resultados, historial de hallazgos y protocolo de la fase 2 |
 | [Despliegue en Azure](docs/09_despliegue_azure.md) | Pasos, recursos de Terraform, costos y diferencias con el diseño anterior en AWS |
+| [Demo en Hugging Face](docs/10_demo_hugging_face.md) | Demo pública gratuita con backends locales: interfaz Gradio y API |
 | [Hoja de ruta](docs/07_hoja_de_ruta.md) | Fases, puertas de calidad y estado |
 
 ## Limitaciones conocidas

@@ -67,3 +67,8 @@ def test_tool_endpoints_validate_input(client):
 def test_oversized_question_rejected(client):
     r = client.post("/v1/ask", json={"pregunta": "x" * 2001}, headers={"x-api-key": "clave-test"})
     assert r.status_code == 422
+
+
+def test_root_redirects_to_docs_outside_prod(client):
+    resp = client.get("/", follow_redirects=False)
+    assert resp.status_code in (302, 307) and resp.headers["location"] == "/docs"

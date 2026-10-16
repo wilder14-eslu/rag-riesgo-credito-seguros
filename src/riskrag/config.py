@@ -111,6 +111,7 @@ class Settings(BaseSettings):
     entra_required_role: str = "RiskRAG.Query"
     # Azure Front Door: si se define, solo se aceptan solicitudes que traen este X-Azure-FDID
     front_door_id: str | None = None
+    home_path: str = Field("/docs", description="A dónde redirige la raíz (la demo usa /demo)")
     approved_sources_path: Path = PROJECT_ROOT / "configs" / "fuentes.yaml"
 
     # Integración con la plataforma de riesgo crediticio

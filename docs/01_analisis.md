@@ -11,7 +11,7 @@ El proyecto construye un asistente que responde preguntas de riesgo crediticio y
 3. **Seguridad por diseño.** Un RAG amplía la superficie de ataque: documentos que contienen instrucciones, herramientas con poder de acción y datos sensibles. El proyecto trata cada riesgo del OWASP Top 10 para LLM (edición 2025) con un control concreto y lo prueba con un conjunto adversario.
 4. **Evaluación como puerta de calidad.** Cada cambio de chunking, modelo o prompt se mide contra el mismo conjunto de preguntas, y CI bloquea el merge si una métrica cae bajo su umbral.
 
-Estado actual: el código completo funciona en modo local sin Azure (embeddings por hashing, índice en memoria, LLM extractivo) y en modo PostgreSQL + pgvector. Los backends de Azure (Azure OpenAI, Azure AI Content Safety, Microsoft Entra ID) están implementados y se activan por configuración. Hay 82 pruebas automáticas (una de integración con PostgreSQL + pgvector) con 89% de cobertura y una evaluación de regresión con 8 métricas.
+Estado actual: el código completo funciona en modo local sin Azure (embeddings por hashing, índice en memoria, LLM extractivo) y en modo PostgreSQL + pgvector. Los backends de Azure (Azure OpenAI, Azure AI Content Safety, Microsoft Entra ID) están implementados y se activan por configuración. Hay 88 pruebas automáticas (una de integración con PostgreSQL + pgvector) con 89% de cobertura y una evaluación de regresión con 8 métricas.
 
 ## 2. Problema y usuarios
 

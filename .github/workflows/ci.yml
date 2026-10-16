@@ -32,7 +32,7 @@ jobs:
           python-version: "3.12"
           cache: pip
       - name: Instalar
-        run: pip install -e ".[dev,mcp,pg,azure]"
+        run: pip install -e ".[dev,mcp,pg,azure,demo]"
       - name: Crear esquema pgvector
         run: |
           psql -h localhost -U postgres -d riskrag -v ON_ERROR_STOP=1 -f sql/001_crear_esquema_pgvector.sql
@@ -64,7 +64,7 @@ jobs:
       - name: Auditoría de dependencias
         run: |
           pip install pip-audit
-          pip install -e ".[azure,pg,mcp]"
+          pip install -e ".[azure,pg,mcp,demo]"
           pip-audit --skip-editable
       - name: Análisis estático de seguridad (Bandit vía Ruff)
         run: |

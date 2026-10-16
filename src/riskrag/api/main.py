@@ -5,8 +5,8 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from fastapi import Depends, FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel, Field
 
 from riskrag import __version__
@@ -78,6 +78,14 @@ async def _input_rejected(_: Request, exc: InputRejected) -> JSONResponse:
 async def _unhandled(_: Request, exc: Exception) -> JSONResponse:  # no filtrar detalles internos
     logger.exception("Error no controlado: %s", type(exc).__name__)
     return JSONResponse(status_code=500, content={"detail": "Error interno."})
+
+
+@app.get("/", include_in_schema=False)
+def root() -> Response:
+    """La raíz lleva a la documentación interactiva (Swagger) o a la demo."""
+    if _settings.env != "prod" and _settings.home_path:
+        return RedirectResponse(_settings.home_path)
+    return JSONResponse(content={"servicio": "RiskRAG", "version": __version__})
 
 
 @app.get("/health")

@@ -153,13 +153,23 @@ class FrontDoorOnlyMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 
+UI_PATHS = ("/docs", "/openapi.json", "/demo")
+
+
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:  # type: ignore[no-untyped-def]
         response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "no-referrer"
-        response.headers["Cache-Control"] = "no-store"
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        if request.url.path.startswith(UI_PATHS):
+            # Swagger y la demo cargan scripts y estilos; la demo se muestra dentro de
+            # huggingface.co, así que solo ese sitio puede enmarcarla.
+            response.headers["Content-Security-Policy"] = (
+                "frame-ancestors 'self' https://huggingface.co"
+            )
+            return response
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Cache-Control"] = "no-store"
         response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
         return response
