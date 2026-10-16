@@ -60,3 +60,18 @@ def test_model_not_found_token_abstains(services):
 def test_out_of_corpus_question_abstains(services):
     ans = services.pipeline.ask("¿Qué tasa de encaje en dólares fijó el banco central este mes?")
     assert ans.abstained
+
+
+class FlagAllDocuments(LocalGuardrail):
+    """Simula Prompt Shields marcando todos los documentos como ataque indirecto."""
+
+    def check_documents(self, query, documents):
+        return list(range(len(documents)))
+
+
+def test_documents_with_hidden_instructions_never_reach_llm(services):
+    llm = FakeLLM("x")
+    pipe = RAGPipeline(services.retriever, llm, FlagAllDocuments(), min_relevance=0.45)
+    ans = pipe.ask("¿Qué categoría corresponde a un crédito de consumo con 45 días de atraso?")
+    assert ans.abstained and llm.calls == 0
+    assert any(f.startswith("document_attack:") for f in ans.security_flags)

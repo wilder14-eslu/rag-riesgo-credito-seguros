@@ -1,7 +1,7 @@
 """Almacenes vectoriales intercambiables.
 
 - ``InMemoryVectorStore``: local, se persiste en JSON (chunks + vectores).
-- ``PgVectorStore``: PostgreSQL con pgvector (Aurora en AWS). Usa el esquema
+- ``PgVectorStore``: PostgreSQL con pgvector (Azure Database for PostgreSQL en la nube). Usa el esquema
   de ``sql/001_crear_esquema_pgvector.sql``. Filtra por vigencia en SQL.
 - OpenSearch se documenta como alternativa (ADR 0001) y se implementa solo si
   la comparación de la fase 2 lo justifica.

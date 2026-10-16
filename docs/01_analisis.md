@@ -11,7 +11,7 @@ El proyecto construye un asistente que responde preguntas de riesgo crediticio y
 3. **Seguridad por diseño.** Un RAG amplía la superficie de ataque: documentos que contienen instrucciones, herramientas con poder de acción y datos sensibles. El proyecto trata cada riesgo del OWASP Top 10 para LLM (edición 2025) con un control concreto y lo prueba con un conjunto adversario.
 4. **Evaluación como puerta de calidad.** Cada cambio de chunking, modelo o prompt se mide contra el mismo conjunto de preguntas, y CI bloquea el merge si una métrica cae bajo su umbral.
 
-Estado actual: el código completo funciona en modo local sin AWS (embeddings por hashing, índice en memoria, LLM extractivo) y en modo PostgreSQL + pgvector. Los backends de Bedrock están implementados y listos para activarse por configuración. Hay 71 pruebas automáticas (una de integración con PostgreSQL + pgvector) con 90% de cobertura y una evaluación de regresión con 8 métricas.
+Estado actual: el código completo funciona en modo local sin Azure (embeddings por hashing, índice en memoria, LLM extractivo) y en modo PostgreSQL + pgvector. Los backends de Azure (Azure OpenAI, Azure AI Content Safety, Microsoft Entra ID) están implementados y se activan por configuración. Hay 82 pruebas automáticas (una de integración con PostgreSQL + pgvector) con 89% de cobertura y una evaluación de regresión con 8 métricas.
 
 ## 2. Problema y usuarios
 
@@ -85,7 +85,8 @@ El detalle está en [02_arquitectura.md](02_arquitectura.md) y en los ADR. Las d
 
 | Decisión | Alternativa descartada | Motivo |
 | --- | --- | --- |
-| pgvector en Aurora como almacén por defecto ([ADR 0001](adr/0001-pgvector-por-defecto.md)) | OpenSearch Serverless | Menor costo base para un portafolio, SQL junto a vectores y aprovecha experiencia previa en SQL; OpenSearch queda como alternativa medible |
+| pgvector en Azure Database for PostgreSQL como almacén por defecto ([ADR 0001](adr/0001-pgvector-por-defecto.md)) | Azure AI Search | Menor costo base para un portafolio, SQL junto a vectores y aprovecha experiencia previa en SQL; Azure AI Search queda como alternativa medible |
+| Azure como nube de despliegue ([ADR 0006](adr/0006-azure-como-nube.md)) | AWS | Es la nube que usan los bancos y aseguradoras a los que apunta el proyecto |
 | Búsqueda híbrida con RRF ([ADR 0004](adr/0004-busqueda-hibrida-rrf.md)) | Solo vectorial | Los números de norma y artículo se pierden en embeddings; BM25 los conserva |
 | Cálculos en herramientas deterministas ([ADR 0003](adr/0003-calculos-deterministas.md)) | Que el LLM calcule | Reproducibilidad y auditoría; el LLM se equivoca en aritmética |
 | Dos servidores MCP separados ([ADR 0002](adr/0002-mcp-servidores-separados.md)) | Un servidor con todo | Aislar permisos: solo uno llama a sistemas externos |
@@ -106,7 +107,7 @@ El NLP no es decoración: cada técnica resuelve un fallo concreto de un RAG ing
 
 ## 7. Seguridad
 
-El modelo de amenazas completo (STRIDE + OWASP LLM 2025) está en [04_seguridad.md](04_seguridad.md). Lo esencial: hay controles en cinco capas (entrada, ingesta, generación, herramientas e infraestructura) y la regla de que **ninguna capa es suficiente sola**. Por ejemplo, la inyección indirecta se ataca con el manifiesto de fuentes aprobadas, la cuarentena de fragmentos sospechosos en la ingesta, la delimitación del contexto en el prompt, el guardrail de Bedrock y la verificación de citas en la salida.
+El modelo de amenazas completo (STRIDE + OWASP LLM 2025) está en [04_seguridad.md](04_seguridad.md). Lo esencial: hay controles en cinco capas (entrada, ingesta, generación, herramientas e infraestructura) y la regla de que **ninguna capa es suficiente sola**. Por ejemplo, la inyección indirecta se ataca con el manifiesto de fuentes aprobadas, la cuarentena de fragmentos sospechosos en la ingesta, la delimitación del contexto en el prompt, Prompt Shields de Azure AI Content Safety sobre la pregunta y sobre los documentos recuperados, y la verificación de citas en la salida.
 
 ## 8. Evaluación y resultados actuales
 
@@ -135,7 +136,7 @@ También apareció un trade-off medible: exigir que las oraciones elegidas esté
 
 ## 9. Costos
 
-En modo local el costo es cero. En AWS los componentes con costo base (que se paga aunque no haya tráfico) son Aurora Serverless v2 (capacidad mínima), los endpoints de interfaz de la VPC, el ALB y WAF. Los de costo variable son Bedrock (tokens de entrada y salida, embeddings, rerank) y CloudWatch. El proyecto incluye un presupuesto de AWS con alertas al 80% y 100%, y la recomendación de apagar el entorno `dev` entre sesiones. Los precios cambian por región y fecha, así que el cálculo se hace con la calculadora oficial de AWS antes de desplegar; ver [09_despliegue_aws.md](09_despliegue_aws.md).
+En modo local el costo es cero. En Azure los componentes con costo base (que se paga aunque no haya tráfico) son PostgreSQL Flexible Server (B1ms), Front Door Standard, los endpoints privados y el registro de contenedores. Container Apps escala a cero. Los de costo variable son Azure OpenAI (tokens de entrada y salida, embeddings), Content Safety (por registro analizado) y Log Analytics (con cuota diaria de 1 GB). El proyecto incluye un presupuesto del grupo de recursos con alertas al 80% y 100%, y la recomendación de destruir el entorno `dev` entre sesiones. Los precios cambian por región y fecha, así que el cálculo se hace con la calculadora oficial de Azure antes de desplegar; ver [09_despliegue_azure.md](09_despliegue_azure.md).
 
 ## 10. Riesgos del proyecto
 
@@ -143,17 +144,17 @@ En modo local el costo es cero. En AWS los componentes con costo base (que se pa
 | --- | --- | --- | --- |
 | Normas desactualizadas en el corpus | Alta | Alto | Metadatos de vigencia, fecha de verificación por tabla, manifiesto con hash |
 | Tablas de anexos mal extraídas de PDF | Media | Alto | Tablas críticas transcritas a YAML versionado y probadas en bordes |
-| Costo de AWS fuera de control | Media | Medio | Backends locales por defecto, presupuesto con alertas, apagar `dev` |
+| Costo de Azure fuera de control | Media | Medio | Backends locales por defecto, presupuesto con alertas, apagar `dev` |
 | Modelos no disponibles en la región | Media | Medio | IDs configurables y capa de modelos intercambiable |
-| Falsa sensación de seguridad con reglas heurísticas | Media | Alto | Defensa en capas, guardrail de Bedrock, conjunto adversario que crece |
+| Falsa sensación de seguridad con reglas heurísticas | Media | Alto | Defensa en capas, Prompt Shields de Azure, conjunto adversario que crece |
 | Sobreajuste de umbrales al corpus de ejemplo | Alta | Medio | Recalibrar con el corpus oficial y separar preguntas de ajuste y de prueba |
 
 ## 11. Valor para el portafolio
 
-Este proyecto conversa con los otros del portafolio: consume el modelo de default de `credit-risk-ml-platform` como herramienta MCP, aplica la misma disciplina estadística de evaluación (métricas con umbrales, reportes reproducibles) y agrega lo que piden las vacantes de ML Engineer y de analítica avanzada en banca y seguros: RAG con evaluación, agentes con herramientas, seguridad de LLM, MLOps e infraestructura como código en AWS.
+Este proyecto conversa con los otros del portafolio: consume el modelo de default de `credit-risk-ml-platform` como herramienta MCP, aplica la misma disciplina estadística de evaluación (métricas con umbrales, reportes reproducibles) y agrega lo que piden las vacantes de ML Engineer y de analítica avanzada en banca y seguros: RAG con evaluación, agentes con herramientas, seguridad de LLM, MLOps e infraestructura como código en Azure.
 
 Preguntas de entrevista que el proyecto permite responder con evidencia: por qué híbrido y no solo vectorial, cómo se mide la fidelidad, cómo se defiende de inyección indirecta, por qué el LLM no calcula provisiones, qué se sacrificó al subir la precisión de citas y cómo se controla el costo.
 
 ## 12. Próximos pasos
 
-Ver [07_hoja_de_ruta.md](07_hoja_de_ruta.md). Lo inmediato: descargar el corpus oficial con `scripts/download_corpus.py`, fijar hashes, escribir las 60 a 100 preguntas de evaluación con respuesta de referencia y activar Bedrock para comparar embeddings y almacenes.
+Ver [07_hoja_de_ruta.md](07_hoja_de_ruta.md). Lo inmediato: descargar el corpus oficial con `scripts/download_corpus.py`, fijar hashes, escribir las 60 a 100 preguntas de evaluación con respuesta de referencia y activar Azure OpenAI para comparar embeddings y almacenes.

@@ -1,9 +1,12 @@
-.PHONY: install dev ingest ask api mcp-rag mcp-riesgo test lint eval security up down api-key docker
+.PHONY: install dev ingest ask api mcp-rag mcp-riesgo test lint eval security up down api-key docker init-db tf-validate
 
 PY ?= python
 
 install:
 	$(PY) -m pip install -e ".[dev,mcp]"
+
+init-db:
+	$(PY) -m riskrag.cli init-db
 
 ingest:
 	$(PY) -m riskrag.cli ingest data/sample
@@ -45,3 +48,6 @@ docker:
 
 api-key:
 	@$(PY) -c "import secrets,hashlib; k=secrets.token_urlsafe(32); print('API key (guárdala):', k); print('SHA-256 (va en RISKRAG_API_KEYS_SHA256):', hashlib.sha256(k.encode()).hexdigest())"
+
+tf-validate:
+	cd infra/terraform && terraform fmt -check -recursive && terraform init -backend=false && terraform validate

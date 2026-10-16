@@ -24,7 +24,7 @@ El proyecto expone dos servidores con el SDK oficial de MCP para Python. Funcion
 
 ## Uso remoto
 
-Con `RISKRAG_MCP_TRANSPORT=streamable-http` el servidor escucha por HTTP. Solo debe exponerse detrás del ALB con autenticación; por defecto se usa stdio, que no abre puertos.
+Con `RISKRAG_MCP_TRANSPORT=streamable-http` el servidor escucha por HTTP. Solo debe exponerse detrás de Front Door con autenticación de Microsoft Entra ID; por defecto se usa stdio, que no abre puertos.
 
 ## Probar con el inspector
 

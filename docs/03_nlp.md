@@ -33,6 +33,6 @@ Cada técnica de NLP del proyecto existe porque corrige un fallo concreto y tien
 | --- | --- | --- |
 | NER entrenado con spaCy | Mejor recall en entidades con redacción variable | Extra `nlp` |
 | NLI multilingüe (`NLIVerifier`) | Fidelidad semántica, no solo léxica | Extra `nlp` (transformers) |
-| Presidio o Amazon Comprehend | Nombres de personas y direcciones | Extra `nlp` o AWS |
+| Presidio o Azure AI Language (detección de PII) | Nombres de personas y direcciones | Extra `nlp` o Azure |
 | Grafo de referencias cruzadas | Traer el artículo citado por el artículo recuperado | Fase 3 |
-| Reescritura de consulta con LLM | Preguntas largas o ambiguas | Bedrock |
+| Reescritura de consulta con LLM | Preguntas largas o ambiguas | Azure OpenAI |

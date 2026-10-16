@@ -52,6 +52,6 @@ El corpus de ejemplo tiene 33 fragmentos: la recuperación casi perfecta no dice
 
 1. Escribir de 60 a 100 preguntas sobre el corpus oficial, con respuesta de referencia y sección fuente. Incluir preguntas con norma derogada, sin respuesta y con premisa falsa.
 2. Separar 30% como conjunto de ajuste y 70% como conjunto de prueba; los umbrales se calibran solo con el de ajuste.
-3. Comparar, con el mismo conjunto: embeddings Titan V2 frente a Cohere Multilingual v3; pgvector frente a OpenSearch; con y sin expansión de glosario; con y sin rerank.
+3. Comparar, con el mismo conjunto: embeddings `text-embedding-3-large` frente a `text-embedding-3-small` (y Cohere Embed Multilingual en Azure AI Foundry); pgvector frente a Azure AI Search; con y sin expansión de glosario; con y sin rerank.
 4. Reportar intervalos de confianza por bootstrap para recall@5 y fidelidad, porque con 100 preguntas una diferencia de 2 puntos puede ser ruido.
-5. Con Bedrock activo, sumar las métricas de RAGAS (faithfulness, answer relevancy, context precision) como segunda opinión, sin reemplazar las métricas propias.
+5. Con Azure OpenAI activo, sumar las métricas de RAGAS (faithfulness, answer relevancy, context precision) como segunda opinión, sin reemplazar las métricas propias.

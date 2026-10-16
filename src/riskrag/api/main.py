@@ -11,7 +11,11 @@ from pydantic import BaseModel, Field
 
 from riskrag import __version__
 from riskrag.agent.orchestrator import LocalAgent
-from riskrag.api.security import SecurityHeadersMiddleware, require_api_key
+from riskrag.api.security import (
+    FrontDoorOnlyMiddleware,
+    SecurityHeadersMiddleware,
+    require_api_key,
+)
 from riskrag.config import get_settings
 from riskrag.factory import get_services
 from riskrag.models import Answer
@@ -38,6 +42,7 @@ app = FastAPI(
     openapi_url="/openapi.json" if _settings.env != "prod" else None,
 )
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(FrontDoorOnlyMiddleware, front_door_id=_settings.front_door_id)
 
 
 class AskRequest(BaseModel):

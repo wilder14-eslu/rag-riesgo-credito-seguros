@@ -6,8 +6,8 @@ Se usa en dos lugares:
 - Documentos en la ingesta (inyección indirecta): un fragmento con
   instrucciones dirigidas al modelo se pone en cuarentena y no se indexa.
 
-Es una primera barrera barata y explicable, no la única: en AWS se suma el
-filtro de ataques de prompt de Bedrock Guardrails y, en el prompt, el texto
+Es una primera barrera barata y explicable, no la única: en Azure se suma
+Prompt Shields de Azure AI Content Safety y, en el prompt, el texto
 recuperado va delimitado y declarado como dato, nunca como instrucción.
 """
 

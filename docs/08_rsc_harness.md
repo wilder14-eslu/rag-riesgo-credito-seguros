@@ -13,10 +13,10 @@ npx @ericrisco/rsc
 El asistente detecta el stack (encontrará `pyproject.toml` y `Dockerfile`), pregunta qué agentes usar y propone skills. Para este proyecto conviene elegir Claude Code y revisar las recomendaciones con:
 
 ```bash
-rsc consult "rag fastapi aws terraform evaluacion"
+rsc consult "rag fastapi azure terraform evaluacion"
 ```
 
-Luego instalar solo las que aporten (los nombres exactos se confirman con `rsc consult`), por ejemplo las de RAG, embeddings, Python, FastAPI, Docker, GitHub Actions, AWS y Postgres.
+Luego instalar solo las que aporten (los nombres exactos se confirman con `rsc consult`), por ejemplo las de RAG, embeddings, Python, FastAPI, Docker, GitHub Actions, Azure y Postgres.
 
 ## Cómo encaja con este repositorio
 
@@ -24,7 +24,7 @@ Luego instalar solo las que aporten (los nombres exactos se confirman con `rsc c
 | --- | --- |
 | Flujo SDD (`specify`, `plan`, `implement`, `verify`, `ship`) | Cada fase de la hoja de ruta empieza con una especificación corta antes de codificar |
 | `02-DOCS/` | Wiki de aprendizajes: resultados de comparaciones, decisiones de chunking, ataques nuevos encontrados. Los ADR formales siguen en `docs/adr/` |
-| `01-TOOLS/` | Conectores con prueba de conexión hacia Bedrock y la base |
+| `01-TOOLS/` | Conectores con prueba de conexión hacia Azure OpenAI y la base |
 | Hooks de Claude Code | Puerta de especificación y guía de mensajes de commit |
 
 ## Qué se versiona

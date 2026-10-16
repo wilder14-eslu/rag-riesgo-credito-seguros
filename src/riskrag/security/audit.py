@@ -2,8 +2,8 @@
 
 Cada consulta, llamada a herramienta y decisión de seguridad deja una línea
 con hora, evento, identidad (hash) y metadatos. El texto se enmascara antes
-de escribirse para que los logs nunca contengan datos personales. En AWS el
-mismo formato va a CloudWatch Logs con retención y cifrado KMS.
+de escribirse para que los logs nunca contengan datos personales. En Azure el
+mismo formato sale por stdout hacia Log Analytics, con retención definida en Terraform.
 """
 
 from __future__ import annotations
@@ -30,7 +30,9 @@ def hash_identity(value: str | None) -> str | None:
 class AuditLogger:
     def __init__(self, path: Path, echo_stdout: bool = False) -> None:
         self.path = path
-        self.echo_stdout = echo_stdout  # en ECS stdout llega a CloudWatch y alimenta las alarmas
+        self.echo_stdout = (
+            echo_stdout  # en Container Apps stdout llega a Log Analytics y alimenta las alertas
+        )
         self.path.parent.mkdir(parents=True, exist_ok=True)
 
     def log(self, event: str, *, actor: str | None = None, **fields: Any) -> None:

@@ -30,10 +30,6 @@ def build_store(settings: Settings) -> VectorStore:
         if settings.pg_dsn is None:
             raise ValueError("RISKRAG_PG_DSN es obligatorio con vector_backend=pgvector")
         return PgVectorStore(settings.pg_dsn.get_secret_value())
-    if settings.vector_backend == "opensearch":
-        raise NotImplementedError(
-            "OpenSearch se habilita tras la comparación de la fase 2 (ADR 0001)."
-        )
     if settings.index_path.exists():
         return InMemoryVectorStore.load(settings.index_path)
     logger.warning("No existe el índice %s; ejecuta 'riskrag ingest'.", settings.index_path)
@@ -46,12 +42,7 @@ def build_index(
     settings = settings or get_settings()
     manifest = SourceManifest.load(settings.approved_sources_path) if use_manifest else None
     chunks, report = ingest_directory(folder, settings, manifest)
-    embedder = build_embedder(
-        settings.embedder_backend,
-        settings.bedrock_embed_model_id,
-        settings.aws_region,
-        settings.embedding_dim,
-    )
+    embedder = build_embedder(settings)
     store = InMemoryVectorStore() if settings.vector_backend == "memory" else build_store(settings)
     if chunks:
         store.upsert(chunks, embedder.embed([c.text for c in chunks], input_type="document"))
@@ -73,28 +64,16 @@ class Services:
 def build_services(settings: Settings | None = None) -> Services:
     settings = settings or get_settings()
     store = build_store(settings)
-    embedder = build_embedder(
-        settings.embedder_backend,
-        settings.bedrock_embed_model_id,
-        settings.aws_region,
-        settings.embedding_dim,
-    )
-    reranker = build_reranker(
-        settings.reranker_backend, settings.bedrock_rerank_model_id, settings.aws_region
-    )
+    embedder = build_embedder(settings)
+    reranker = build_reranker(settings)
     retriever = HybridRetriever(
         store, embedder, reranker, settings.top_k_candidates, settings.top_k_final, settings.rrf_k
     )
     audit = AuditLogger(settings.audit_log_path, echo_stdout=settings.audit_stdout)
     pipeline = RAGPipeline(
         retriever=retriever,
-        llm=build_llm(settings.llm_backend, settings.bedrock_llm_model_id, settings.aws_region),
-        guardrail=build_guardrail(
-            settings.guardrail_backend,
-            settings.bedrock_guardrail_id,
-            settings.bedrock_guardrail_version,
-            settings.aws_region,
-        ),
+        llm=build_llm(settings),
+        guardrail=build_guardrail(settings),
         glossary=load_glossary(str(settings.glossary_path)),
         audit=audit,
         min_relevance=settings.effective_min_relevance,

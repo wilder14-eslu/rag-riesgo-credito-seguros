@@ -1,7 +1,7 @@
 """Límite de tasa por identidad (token bucket en memoria).
 
-Protege costo y disponibilidad (OWASP LLM10). En AWS el límite principal
-vive en AWS WAF; este es el respaldo dentro de la aplicación.
+Protege costo y disponibilidad (OWASP LLM10). En Azure el límite principal
+vive en el WAF de Azure Front Door; este es el respaldo dentro de la aplicación.
 """
 
 from __future__ import annotations

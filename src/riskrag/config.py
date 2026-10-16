@@ -2,9 +2,9 @@
 
 Todos los valores se leen de variables de entorno con prefijo ``RISKRAG_``
 (o de un archivo ``.env``). Los valores por defecto permiten ejecutar todo en
-modo local, sin AWS: embeddings por hashing, índice en memoria y un LLM
-extractivo determinista. Para producción se cambian los backends a Bedrock y
-pgvector u OpenSearch.
+modo local, sin Azure: embeddings por hashing, índice en memoria y un LLM
+extractivo determinista. Para producción se cambian los backends a Azure
+OpenAI, Azure AI Content Safety y PostgreSQL con pgvector.
 """
 
 from __future__ import annotations
@@ -42,27 +42,40 @@ class Settings(BaseSettings):
 
     # Entorno
     env: Literal["local", "dev", "prod"] = "local"
-    aws_region: str = "us-east-1"
 
     # Backends intercambiables
-    embedder_backend: Literal["hashing", "bedrock"] = "hashing"
-    vector_backend: Literal["memory", "pgvector", "opensearch"] = "memory"
-    llm_backend: Literal["extractive", "bedrock"] = "extractive"
-    reranker_backend: Literal["lexical", "bedrock", "none"] = "lexical"
-    guardrail_backend: Literal["local", "bedrock"] = "local"
+    embedder_backend: Literal["hashing", "azure_openai"] = "hashing"
+    vector_backend: Literal["memory", "pgvector"] = "memory"
+    llm_backend: Literal["extractive", "azure_openai"] = "extractive"
+    reranker_backend: Literal["lexical", "azure_cohere", "none"] = "lexical"
+    guardrail_backend: Literal["local", "azure_content_safety"] = "local"
 
-    # Modelos de Bedrock (confirmar disponibilidad en la región antes de usar)
-    bedrock_llm_model_id: str = "anthropic.claude-3-5-sonnet-20240620-v1:0"
-    bedrock_embed_model_id: str = "amazon.titan-embed-text-v2:0"
-    bedrock_rerank_model_id: str = "cohere.rerank-v3-5:0"
-    bedrock_guardrail_id: str | None = None
-    bedrock_guardrail_version: str = "DRAFT"
+    # Azure OpenAI. Sin api key se usa la identidad administrada (Microsoft Entra ID)
+    azure_openai_endpoint: str | None = None
+    azure_openai_api_key: SecretStr | None = None
+    azure_openai_api_version: str = "2024-10-21"
+    azure_openai_chat_deployment: str = "gpt-4.1-mini"
+    azure_openai_embed_deployment: str = "text-embedding-3-large"
+    azure_openai_send_temperature: bool = Field(
+        True, description="Los modelos de razonamiento no aceptan temperature: poner False"
+    )
     embedding_dim: int = 1024
+
+    # Azure AI Content Safety (Prompt Shields + moderación de texto)
+    azure_content_safety_endpoint: str | None = None
+    azure_content_safety_api_key: SecretStr | None = None
+    azure_content_safety_api_version: str = "2024-09-01"
+    azure_content_safety_max_severity: int = Field(
+        2, description="Severidad máxima tolerada (0, 2, 4, 6); por encima se bloquea"
+    )
+
+    # Rerank opcional: Cohere Rerank desplegado como modelo serverless en Azure AI Foundry
+    azure_rerank_endpoint: str | None = None
+    azure_rerank_api_key: SecretStr | None = None
+    azure_rerank_model: str = "Cohere-rerank-v3.5"
 
     # Base vectorial
     pg_dsn: SecretStr | None = None
-    opensearch_endpoint: str | None = None
-    opensearch_index: str = "riskrag-chunks"
 
     # Recuperación
     top_k_candidates: int = 20
@@ -71,7 +84,7 @@ class Settings(BaseSettings):
     min_relevance: float = Field(
         0.45, description="Umbral de abstención calibrado para el reranker léxico"
     )
-    min_relevance_bedrock_rerank: float = Field(
+    min_relevance_azure_rerank: float = Field(
         0.20, description="Umbral para Cohere Rerank (otra escala). Recalibrar en la fase 2"
     )
 
@@ -89,10 +102,15 @@ class Settings(BaseSettings):
     rate_limit_per_minute: int = 30
     audit_log_path: Path = PROJECT_ROOT / "logs" / "audit.jsonl"
     audit_stdout: bool = Field(
-        False, description="Además del archivo, escribir en stdout (CloudWatch)"
+        False, description="Además del archivo, escribir en stdout (Log Analytics)"
     )
-    trust_alb_oidc: bool = Field(False, description="Aceptar la identidad firmada por el ALB")
-    alb_arn: str | None = None
+    # Microsoft Entra ID: tokens de acceso firmados para clientes de la API
+    trust_entra_jwt: bool = Field(False, description="Aceptar tokens Bearer de Microsoft Entra ID")
+    entra_tenant_id: str | None = None
+    entra_audience: str | None = Field(None, description="Application ID URI o client id de la API")
+    entra_required_role: str = "RiskRAG.Query"
+    # Azure Front Door: si se define, solo se aceptan solicitudes que traen este X-Azure-FDID
+    front_door_id: str | None = None
     approved_sources_path: Path = PROJECT_ROOT / "configs" / "fuentes.yaml"
 
     # Integración con la plataforma de riesgo crediticio
@@ -109,8 +127,8 @@ class Settings(BaseSettings):
 
     @property
     def effective_min_relevance(self) -> float:
-        if self.reranker_backend == "bedrock":
-            return self.min_relevance_bedrock_rerank
+        if self.reranker_backend == "azure_cohere":
+            return self.min_relevance_azure_rerank
         return self.min_relevance
 
 

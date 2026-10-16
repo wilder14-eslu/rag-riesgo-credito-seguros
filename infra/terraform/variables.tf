@@ -1,3 +1,8 @@
+variable "subscription_id" {
+  description = "Suscripción de Azure donde se despliega (az account show --query id -o tsv)"
+  type        = string
+}
+
 variable "project" {
   description = "Nombre corto del proyecto"
   type        = string
@@ -14,92 +19,109 @@ variable "environment" {
   }
 }
 
-variable "region" {
-  description = "Región de AWS (confirmar que los modelos de Bedrock estén habilitados aquí)"
+variable "location" {
+  description = "Región de Azure (confirmar que tenga los modelos de Azure OpenAI y Content Safety)"
   type        = string
-  default     = "us-east-1"
+  default     = "eastus2"
 }
 
-variable "vpc_cidr" {
+variable "vnet_cidr" {
   type    = string
   default = "10.40.0.0/16"
 }
 
 variable "container_image_tag" {
-  description = "Tag inmutable de la imagen en ECR (por ejemplo el SHA del commit)"
-  type        = string
-}
-
-variable "acm_certificate_arn" {
-  description = "Certificado ACM para el listener HTTPS del ALB"
-  type        = string
-}
-
-variable "cognito_domain_prefix" {
-  description = "Prefijo único del dominio de Cognito"
+  description = "Tag inmutable de la imagen en ACR (por ejemplo el SHA del commit)"
   type        = string
 }
 
 variable "alert_email" {
-  description = "Correo para alarmas y presupuesto"
+  description = "Correo para alertas y presupuesto"
   type        = string
 }
 
 variable "monthly_budget_usd" {
-  description = "Presupuesto mensual con alerta al 80% y 100%"
+  description = "Presupuesto mensual del grupo de recursos con alerta al 80% (pronóstico) y 100%"
   type        = number
-  default     = 50
+  default     = 100
 }
 
-variable "llm_model_id" {
-  type    = string
-  default = "anthropic.claude-3-5-sonnet-20240620-v1:0"
+variable "budget_start_date" {
+  description = "Primer día del mes en que empieza el presupuesto (mes actual o futuro), formato RFC 3339"
+  type        = string
+  default     = "2026-11-01T00:00:00Z"
+  validation {
+    condition     = can(regex("^\\d{4}-\\d{2}-01T00:00:00Z$", var.budget_start_date))
+    error_message = "Debe ser el primer día de un mes, por ejemplo 2026-11-01T00:00:00Z."
+  }
 }
 
-variable "embed_model_id" {
-  type    = string
-  default = "amazon.titan-embed-text-v2:0"
+variable "operator_ip_cidrs" {
+  description = "IP públicas (CIDR) desde donde se ejecuta Terraform; son las únicas que llegan a Key Vault"
+  type        = list(string)
 }
 
-variable "rerank_model_id" {
-  type    = string
-  default = "cohere.rerank-v3-5:0"
+variable "api_keys_sha256" {
+  description = "Hashes SHA-256 de las API keys de clientes (make api-key). Se guardan en Key Vault"
+  type        = list(string)
+  default     = []
+  sensitive   = true
 }
 
-variable "aurora_min_acu" {
-  type    = number
-  default = 0.5
+# Azure OpenAI: confirmar disponibilidad y fecha de retiro del modelo en la región
+variable "chat_model" {
+  type = object({ name = string, version = string, capacity = number })
+  default = {
+    name     = "gpt-4.1-mini"
+    version  = "2025-04-14"
+    capacity = 50 # miles de tokens por minuto
+  }
 }
 
-variable "aurora_max_acu" {
+variable "embedding_model" {
+  type = object({ name = string, version = string, capacity = number })
+  default = {
+    name     = "text-embedding-3-large"
+    version  = "1"
+    capacity = 50
+  }
+}
+
+variable "openai_deployment_sku" {
+  description = "GlobalStandard es el más barato; DataZoneStandard o Standard mantienen los datos en la zona o región"
+  type        = string
+  default     = "GlobalStandard"
+}
+
+variable "postgres_sku" {
+  description = "B_Standard_B1ms es suficiente para el portafolio; usar GP_Standard_D2ds_v5 en prod"
+  type        = string
+  default     = "B_Standard_B1ms"
+}
+
+variable "front_door_sku" {
+  description = "Standard_AzureFrontDoor (reglas propias y límite de tasa) o Premium_AzureFrontDoor (agrega reglas administradas de OWASP y bots)"
+  type        = string
+  default     = "Standard_AzureFrontDoor"
+  validation {
+    condition     = contains(["Standard_AzureFrontDoor", "Premium_AzureFrontDoor"], var.front_door_sku)
+    error_message = "front_door_sku debe ser Standard_AzureFrontDoor o Premium_AzureFrontDoor."
+  }
+}
+
+variable "waf_rate_limit_per_5min" {
+  description = "Solicitudes máximas por IP cada 5 minutos en el WAF"
+  type        = number
+  default     = 300
+}
+
+variable "max_replicas" {
   type    = number
   default = 2
 }
 
-variable "enable_interface_endpoints" {
-  description = "Endpoints privados. Tienen costo por hora. Sin ellos y sin NAT, las tareas no pueden leer ECR ni Secrets Manager: desactivar solo si se agrega un NAT."
-  type        = bool
-  default     = true
-}
-
-variable "waf_rate_limit_per_5min" {
-  type    = number
-  default = 300
-}
-
-variable "app_domain" {
-  description = "Dominio público de la app (el del certificado ACM), por ejemplo riskrag.midominio.com"
+variable "ingest_folder" {
+  description = "Carpeta dentro de la imagen que indexa el job de ingesta"
   type        = string
-}
-
-variable "extra_bedrock_resource_arns" {
-  description = "ARN adicionales que la tarea puede invocar, por ejemplo perfiles de inferencia de modelos Claude recientes (inference-profile/us.anthropic...) y los foundation-model de las regiones a las que enrutan"
-  type        = list(string)
-  default     = []
-}
-
-variable "trust_alb_oidc" {
-  description = "La API acepta la identidad firmada por el ALB (usuarios de Cognito) además de API keys"
-  type        = bool
-  default     = true
+  default     = "data/sample"
 }

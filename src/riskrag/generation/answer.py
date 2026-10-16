@@ -103,6 +103,14 @@ class RAGPipeline:
         retrieved = self.retriever.retrieve(
             safe_question, lexical_query=lexical, on=on, domain=domain
         )
+        # Inyección indirecta (OWASP LLM01): se descartan fragmentos con instrucciones ocultas
+        flagged = set(
+            self.guardrail.check_documents(safe_question, [r.chunk.text for r in retrieved])
+        )
+        if flagged:
+            flags += [f"document_attack:{retrieved[i].chunk.chunk_id}" for i in sorted(flagged)]
+            self._log("documents_dropped", actor, dropped=len(flagged))
+            retrieved = [r for i, r in enumerate(retrieved) if i not in flagged]
         retrieved_ids = [r.chunk.chunk_id for r in retrieved]
 
         if not retrieved or retrieved[0].score < self.min_relevance:

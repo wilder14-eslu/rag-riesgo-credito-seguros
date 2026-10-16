@@ -1,16 +1,20 @@
 """Guardrails de entrada y salida.
 
-- ``LocalGuardrail``: reglas propias (inyección, PII). Funciona sin AWS.
-- ``BedrockGuardrail``: llama a la API ``ApplyGuardrail`` de Bedrock con el
-  guardrail configurado en Terraform (filtro de ataques de prompt, PII,
-  temas denegados, grounding). Se combina con las reglas locales: basta que
-  una de las dos capas bloquee.
+- ``LocalGuardrail``: reglas propias (inyección, PII). Funciona sin Azure.
+- ``AzureContentSafetyGuardrail``: Azure AI Content Safety. Prompt Shields
+  detecta ataques directos en la pregunta y ataques indirectos escondidos en
+  los documentos recuperados; la moderación de texto bloquea contenido dañino
+  por severidad. Se combina con las reglas locales: basta que una capa bloquee.
 """
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, Literal, Protocol
+
+import httpx
+from pydantic import SecretStr
 
 from riskrag.security.injection import scan
 from riskrag.security.pii import mask_pii
@@ -33,6 +37,10 @@ class Guardrail(Protocol):
         evidence: list[str] | None = None,
     ) -> GuardrailDecision: ...
 
+    def check_documents(self, query: str, documents: list[str]) -> list[int]:
+        """Índices de los documentos recuperados con instrucciones ocultas."""
+        ...
+
 
 class LocalGuardrail:
     def check(
@@ -54,32 +62,57 @@ class LocalGuardrail:
         flags += [f"pii:{k}" for k in kinds]
         return GuardrailDecision(True, masked, flags)
 
+    def check_documents(self, query: str, documents: list[str]) -> list[int]:
+        # En local la cuarentena de la ingesta ya revisó cada fragmento con las mismas reglas
+        return []
 
-def _has_blocking_action(node: Any) -> bool:
-    """True si alguna evaluación del guardrail tiene ``action == "BLOCKED"``.
 
-    ``GUARDRAIL_INTERVENED`` también aparece cuando el guardrail solo enmascaró
-    datos (ANONYMIZED); en ese caso la respuesta sigue siendo válida.
+class AzureContentSafetyGuardrail:
+    """Prompt Shields y moderación de texto de Azure AI Content Safety.
+
+    ``http`` y ``token_provider`` se inyectan en las pruebas. Sin API key se
+    autentica con la identidad administrada (token de Microsoft Entra ID).
     """
-    if isinstance(node, dict):
-        if node.get("action") == "BLOCKED":
-            return True
-        return any(_has_blocking_action(v) for v in node.values())
-    if isinstance(node, list):
-        return any(_has_blocking_action(v) for v in node)
-    return False
 
+    MAX_DOCS = 5
+    MAX_DOC_CHARS = 2000  # Prompt Shields limita el tamaño total de la solicitud
 
-class BedrockGuardrail:
-    def __init__(self, guardrail_id: str, version: str, region: str, client: Any = None) -> None:
-        if client is None:
-            import boto3
-
-            client = boto3.client("bedrock-runtime", region_name=region)
-        self._client = client
-        self.guardrail_id = guardrail_id
-        self.version = version
+    def __init__(
+        self,
+        endpoint: str,
+        api_version: str = "2024-09-01",
+        api_key: SecretStr | None = None,
+        max_severity: int = 2,
+        http: httpx.Client | None = None,
+        token_provider: Callable[[], str] | None = None,
+    ) -> None:
+        self.base = endpoint.rstrip("/") + "/contentsafety/text"
+        self.api_version = api_version
+        self.api_key = api_key
+        self.max_severity = max_severity
+        self._http = http or httpx.Client(timeout=10.0)
+        self._token_provider = token_provider
         self._local = LocalGuardrail()
+
+    def _post(self, operation: str, body: dict[str, Any]) -> dict[str, Any]:
+        from riskrag.azure_auth import auth_headers
+
+        resp = self._http.post(
+            f"{self.base}:{operation}",
+            params={"api-version": self.api_version},
+            headers=auth_headers(self.api_key, "Ocp-Apim-Subscription-Key", self._token_provider),
+            json=body,
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+    def _harmful(self, text: str) -> list[str]:
+        out = self._post("analyze", {"text": text[:10000], "outputType": "FourSeverityLevels"})
+        return [
+            f"azure:harm:{c['category'].lower()}"
+            for c in out.get("categoriesAnalysis", [])
+            if int(c.get("severity", 0)) > self.max_severity
+        ]
 
     def check(
         self,
@@ -92,36 +125,36 @@ class BedrockGuardrail:
         local = self._local.check(text, source)
         if not local.allowed:
             return local
-        if source == "OUTPUT" and evidence and query:
-            # Con calificadores, el filtro de grounding compara la respuesta con la evidencia
-            content = [
-                {
-                    "text": {
-                        "text": "\n\n".join(evidence)[:20000],
-                        "qualifiers": ["grounding_source"],
-                    }
-                },
-                {"text": {"text": query, "qualifiers": ["query"]}},
-                {"text": {"text": local.text, "qualifiers": ["guard_content"]}},
-            ]
-        else:
-            content = [{"text": {"text": local.text}}]
-        resp = self._client.apply_guardrail(
-            guardrailIdentifier=self.guardrail_id,
-            guardrailVersion=self.version,
-            source=source,
-            content=content,
+        if source == "INPUT":
+            shield = self._post("shieldPrompt", {"userPrompt": local.text[:10000], "documents": []})
+            if shield.get("userPromptAnalysis", {}).get("attackDetected"):
+                return GuardrailDecision(False, text, [*local.flags, "azure:prompt_attack"])
+        harm = self._harmful(local.text)
+        if harm:
+            return GuardrailDecision(
+                False, "Contenido bloqueado por política.", [*local.flags, *harm]
+            )
+        return local
+
+    def check_documents(self, query: str, documents: list[str]) -> list[int]:
+        flagged: list[int] = []
+        for start in range(0, len(documents), self.MAX_DOCS):
+            batch = [d[: self.MAX_DOC_CHARS] for d in documents[start : start + self.MAX_DOCS]]
+            out = self._post("shieldPrompt", {"userPrompt": query[:2000], "documents": batch})
+            for i, analysis in enumerate(out.get("documentsAnalysis", [])):
+                if analysis.get("attackDetected"):
+                    flagged.append(start + i)
+        return flagged
+
+
+def build_guardrail(settings: Any) -> Guardrail:
+    if settings.guardrail_backend == "azure_content_safety":
+        if not settings.azure_content_safety_endpoint:
+            raise ValueError("RISKRAG_AZURE_CONTENT_SAFETY_ENDPOINT es obligatorio")
+        return AzureContentSafetyGuardrail(
+            settings.azure_content_safety_endpoint,
+            settings.azure_content_safety_api_version,
+            settings.azure_content_safety_api_key,
+            settings.azure_content_safety_max_severity,
         )
-        if resp.get("action") != "GUARDRAIL_INTERVENED":
-            return local
-        outputs = resp.get("outputs") or [{"text": "Contenido bloqueado por política."}]
-        if _has_blocking_action(resp.get("assessments", [])):
-            return GuardrailDecision(False, outputs[0]["text"], [*local.flags, "bedrock:blocked"])
-        # Solo enmascaró: se usa el texto anonimizado
-        return GuardrailDecision(True, outputs[0]["text"], [*local.flags, "bedrock:anonymized"])
-
-
-def build_guardrail(backend: str, guardrail_id: str | None, version: str, region: str) -> Guardrail:
-    if backend == "bedrock" and guardrail_id:
-        return BedrockGuardrail(guardrail_id, version, region)
     return LocalGuardrail()

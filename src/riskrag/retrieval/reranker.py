@@ -2,14 +2,17 @@
 
 - ``LexicalReranker``: combina cobertura de términos de la consulta,
   coincidencia exacta de números y la puntuación de fusión. Local y barato.
-- ``BedrockReranker``: Cohere Rerank 3.5 vía la API ``Rerank`` de
-  ``bedrock-agent-runtime``.
+- ``AzureCohereReranker``: Cohere Rerank 3.5 desplegado como modelo serverless
+  en Azure AI Foundry (API ``/v2/rerank`` de Cohere). Es opcional: sin él se
+  usa el reranker léxico.
 """
 
 from __future__ import annotations
 
 import re
-from typing import Protocol
+from typing import Any, Protocol
+
+import httpx
 
 from riskrag.models import RetrievedChunk
 from riskrag.nlp.normalize import tokenize
@@ -65,45 +68,51 @@ class LexicalReranker:
         return rescored[:k]
 
 
-class BedrockReranker:  # pragma: no cover - requiere AWS
-    def __init__(self, model_id: str, region: str) -> None:
-        import boto3
+class AzureCohereReranker:
+    """Cohere Rerank en Azure AI Foundry. ``http`` se inyecta en las pruebas."""
 
-        self._client = boto3.client("bedrock-agent-runtime", region_name=region)
-        self.model_arn = f"arn:aws:bedrock:{region}::foundation-model/{model_id}"
+    def __init__(
+        self,
+        endpoint: str,
+        api_key: str,
+        model: str,
+        http: httpx.Client | None = None,
+        timeout_s: float = 15.0,
+    ) -> None:
+        self.url = endpoint.rstrip("/") + "/v2/rerank"
+        self.model = model
+        self._headers = {"Authorization": f"Bearer {api_key}"}
+        self._http = http or httpx.Client(timeout=timeout_s)
 
     def rerank(self, query: str, candidates: list[RetrievedChunk], k: int) -> list[RetrievedChunk]:
         if not candidates:
             return []
-        resp = self._client.rerank(
-            queries=[{"type": "TEXT", "textQuery": {"text": query}}],
-            sources=[
-                {
-                    "type": "INLINE",
-                    "inlineDocumentSource": {
-                        "type": "TEXT",
-                        "textDocument": {"text": c.chunk.text},
-                    },
-                }
-                for c in candidates
-            ],
-            rerankingConfiguration={
-                "type": "BEDROCK_RERANKING_MODEL",
-                "bedrockRerankingConfiguration": {
-                    "numberOfResults": min(k, len(candidates)),
-                    "modelConfiguration": {"modelArn": self.model_arn},
-                },
+        resp = self._http.post(
+            self.url,
+            headers=self._headers,
+            json={
+                "model": self.model,
+                "query": query,
+                "documents": [c.chunk.text for c in candidates],
+                "top_n": min(k, len(candidates)),
             },
         )
+        resp.raise_for_status()
         return [
-            candidates[r["index"]].model_copy(update={"score": float(r["relevanceScore"])})
-            for r in resp["results"]
+            candidates[r["index"]].model_copy(update={"score": float(r["relevance_score"])})
+            for r in resp.json()["results"]
         ]
 
 
-def build_reranker(backend: str, model_id: str, region: str) -> Reranker:
-    if backend == "bedrock":
-        return BedrockReranker(model_id, region)
-    if backend == "none":
+def build_reranker(settings: Any) -> Reranker:
+    if settings.reranker_backend == "azure_cohere":
+        if not settings.azure_rerank_endpoint or settings.azure_rerank_api_key is None:
+            raise ValueError("El rerank de Azure requiere RISKRAG_AZURE_RERANK_ENDPOINT y su clave")
+        return AzureCohereReranker(
+            settings.azure_rerank_endpoint,
+            settings.azure_rerank_api_key.get_secret_value(),
+            settings.azure_rerank_model,
+        )
+    if settings.reranker_backend == "none":
         return NoReranker()
-    return LexicalReranker()
+    return LexicalReranker(rrf_k=settings.rrf_k)

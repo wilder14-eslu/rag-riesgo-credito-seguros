@@ -1,28 +1,33 @@
-output "alb_dns_name" {
-  description = "Apuntar el registro DNS de app_domain a este nombre"
-  value       = aws_lb.main.dns_name
+output "api_url" {
+  description = "URL pública de la API (Front Door)"
+  value       = "https://${azurerm_cdn_frontdoor_endpoint.api.host_name}"
 }
 
-output "ecr_repository_url" {
-  value = aws_ecr_repository.api.repository_url
+output "resource_group" {
+  value = azurerm_resource_group.main.name
 }
 
-output "corpus_bucket" {
-  value = aws_s3_bucket.corpus.bucket
+output "acr_login_server" {
+  value = azurerm_container_registry.main.login_server
 }
 
-output "aurora_endpoint" {
-  value = aws_rds_cluster.main.endpoint
+output "ingest_job_name" {
+  value = azurerm_container_app_job.ingest.name
 }
 
-output "guardrail_id" {
-  value = aws_bedrock_guardrail.main.guardrail_id
+output "openai_endpoint" {
+  value = azurerm_cognitive_account.openai.endpoint
 }
 
-output "secret_api_keys_arn" {
-  value = aws_secretsmanager_secret.api_keys.arn
+output "entra_api_client_id" {
+  description = "Audiencia de los tokens: los clientes piden el scope <client_id>/.default"
+  value       = azuread_application.api.client_id
 }
 
-output "secret_pg_dsn_arn" {
-  value = aws_secretsmanager_secret.pg_dsn.arn
+output "key_vault_name" {
+  value = azurerm_key_vault.main.name
+}
+
+output "log_analytics_workspace_id" {
+  value = azurerm_log_analytics_workspace.main.workspace_id
 }

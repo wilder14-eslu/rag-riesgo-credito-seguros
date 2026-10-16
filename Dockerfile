@@ -4,7 +4,7 @@ ENV PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1
 WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY src ./src
-RUN pip install --prefix=/install ".[aws,pg]"
+RUN pip install --prefix=/install ".[azure,pg]"
 
 FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 RISKRAG_PROJECT_ROOT=/app
@@ -18,6 +18,10 @@ WORKDIR /app
 COPY --from=build /install /usr/local
 COPY configs ./configs
 COPY eval ./eval
+# Esquema y corpus versionados con la imagen: el job de ingesta los usa desde aquí
+COPY sql ./sql
+COPY data/sample ./data/sample
+COPY data/raw ./data/raw
 USER 10001
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \

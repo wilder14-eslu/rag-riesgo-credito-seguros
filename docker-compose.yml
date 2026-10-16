@@ -1,4 +1,4 @@
-# Entorno local con PostgreSQL + pgvector (sin AWS). Uso: make up
+# Entorno local con PostgreSQL + pgvector (sin Azure). Uso: make up
 services:
   db:
     image: pgvector/pgvector:pg16

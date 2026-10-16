@@ -3,8 +3,8 @@
 Modo local (por defecto): enrutamiento por intención con extracción de
 parámetros por reglas. Es transparente, rápido y fácil de evaluar.
 
-Modo Bedrock (``BedrockToolAgent``): Claude elige herramientas con la API
-Converse y ``toolConfig``. Usa las mismas funciones que los servidores MCP,
+Modo Azure (``AzureOpenAIToolAgent``): un modelo de Azure OpenAI elige
+herramientas con *function calling*. Usa las mismas funciones que los servidores MCP,
 con un máximo de pasos y lista explícita de herramientas permitidas
 (OWASP LLM06: agencia excesiva).
 """
@@ -199,74 +199,74 @@ class LocalAgent:
         return None
 
 
+def _function(name: str, description: str, parameters: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "type": "function",
+        "function": {"name": name, "description": description, "parameters": parameters},
+    }
+
+
 TOOL_SPECS = [
-    {
-        "toolSpec": {
-            "name": "buscar_normativa",
-            "description": "Busca en normativa y documentos técnicos de riesgo crediticio y seguros y devuelve una respuesta con citas.",
-            "inputSchema": {
-                "json": {
-                    "type": "object",
-                    "properties": {"pregunta": {"type": "string"}},
-                    "required": ["pregunta"],
-                }
+    _function(
+        "buscar_normativa",
+        "Busca en normativa y documentos técnicos de riesgo crediticio y seguros y devuelve una respuesta con citas.",
+        {
+            "type": "object",
+            "properties": {"pregunta": {"type": "string"}},
+            "required": ["pregunta"],
+        },
+    ),
+    _function(
+        "clasificar_deudor",
+        "Clasifica al deudor según días de atraso y tipo de crédito (Res. SBS 11356-2008).",
+        {
+            "type": "object",
+            "properties": {
+                "tipo_credito": {"type": "string", "enum": sorted(set(_CREDIT_TYPES.values()))},
+                "dias_atraso": {"type": "integer", "minimum": 0, "maximum": 10000},
             },
-        }
-    },
-    {
-        "toolSpec": {
-            "name": "clasificar_deudor",
-            "description": "Clasifica al deudor según días de atraso y tipo de crédito (Res. SBS 11356-2008).",
-            "inputSchema": {
-                "json": {
-                    "type": "object",
-                    "properties": {
-                        "tipo_credito": {
-                            "type": "string",
-                            "enum": sorted(set(_CREDIT_TYPES.values())),
-                        },
-                        "dias_atraso": {"type": "integer", "minimum": 0, "maximum": 10000},
-                    },
-                    "required": ["tipo_credito", "dias_atraso"],
-                }
+            "required": ["tipo_credito", "dias_atraso"],
+        },
+    ),
+    _function(
+        "calcular_provision",
+        "Calcula la provisión simplificada por categoría, monto y garantía.",
+        {
+            "type": "object",
+            "properties": {
+                "tipo_credito": {"type": "string", "enum": sorted(set(_CREDIT_TYPES.values()))},
+                "categoria": {"type": "string", "enum": list(_CATEGORIES.values())},
+                "monto": {"type": "number", "exclusiveMinimum": 0},
+                "monto_cubierto": {"type": "number", "minimum": 0},
             },
-        }
-    },
-    {
-        "toolSpec": {
-            "name": "calcular_provision",
-            "description": "Calcula la provisión simplificada por categoría, monto y garantía.",
-            "inputSchema": {
-                "json": {
-                    "type": "object",
-                    "properties": {
-                        "tipo_credito": {
-                            "type": "string",
-                            "enum": sorted(set(_CREDIT_TYPES.values())),
-                        },
-                        "categoria": {"type": "string", "enum": list(_CATEGORIES.values())},
-                        "monto": {"type": "number", "exclusiveMinimum": 0},
-                        "monto_cubierto": {"type": "number", "minimum": 0},
-                    },
-                    "required": ["tipo_credito", "categoria", "monto"],
-                }
-            },
-        }
-    },
+            "required": ["tipo_credito", "categoria", "monto"],
+        },
+    ),
 ]
 
+AGENT_SYSTEM_PROMPT = (
+    "Eres un analista de riesgo crediticio. Usa herramientas para normativa y "
+    "cálculos; nunca calcules tú. Cita las fuentes que devuelvan las herramientas."
+)
 
-class BedrockToolAgent:  # pragma: no cover - requiere AWS
-    """Agente con uso de herramientas en Bedrock. Máximo ``max_steps`` llamadas."""
+
+class AzureOpenAIToolAgent:
+    """Agente con function calling en Azure OpenAI. Máximo ``max_steps`` rondas.
+
+    ``client`` se inyecta en las pruebas; en Azure se construye con la
+    identidad administrada.
+    """
 
     ALLOWED = {"buscar_normativa", "clasificar_deudor", "calcular_provision"}
 
-    def __init__(self, services: Services, max_steps: int = 4) -> None:
-        import boto3
+    def __init__(self, services: Services, max_steps: int = 4, client: Any = None) -> None:
+        if client is None:  # pragma: no cover - requiere Azure
+            from riskrag.generation.llm import build_azure_openai_client
 
+            client = build_azure_openai_client(services.settings)
         self.s = services
         self.max_steps = max_steps
-        self._client = boto3.client("bedrock-runtime", region_name=services.settings.aws_region)
+        self._client = client
 
     def _call_tool(self, name: str, args: dict[str, Any], actor: str | None) -> dict[str, Any]:
         if name not in self.ALLOWED:
@@ -290,48 +290,52 @@ class BedrockToolAgent:  # pragma: no cover - requiere AWS
 
     def run(self, question: str, actor: str | None = None) -> str:
         question = sanitize_query(question, self.s.settings.max_query_chars)
-        messages: list[dict[str, Any]] = [{"role": "user", "content": [{"text": question}]}]
-        system = [
-            {
-                "text": "Eres un analista de riesgo crediticio. Usa herramientas para normativa y "
-                "cálculos; nunca calcules tú. Cita las fuentes que devuelvan las herramientas."
-            }
+        messages: list[dict[str, Any]] = [
+            {"role": "system", "content": AGENT_SYSTEM_PROMPT},
+            {"role": "user", "content": question},
         ]
+        settings = self.s.settings
         for _ in range(self.max_steps):
-            resp = self._client.converse(
-                modelId=self.s.settings.bedrock_llm_model_id,
-                system=system,
-                messages=messages,
-                toolConfig={"tools": TOOL_SPECS},
-                inferenceConfig={"maxTokens": 900, "temperature": 0.0},
+            kwargs: dict[str, Any] = {
+                "model": settings.azure_openai_chat_deployment,
+                "messages": messages,
+                "tools": TOOL_SPECS,
+                "max_completion_tokens": settings.max_answer_tokens,
+            }
+            if settings.azure_openai_send_temperature:
+                kwargs["temperature"] = 0.0
+            msg = self._client.chat.completions.create(**kwargs).choices[0].message
+            calls = list(msg.tool_calls or [])
+            if not calls:
+                return msg.content or ""
+            messages.append(
+                {
+                    "role": "assistant",
+                    "content": msg.content,
+                    "tool_calls": [
+                        {
+                            "id": c.id,
+                            "type": "function",
+                            "function": {
+                                "name": c.function.name,
+                                "arguments": c.function.arguments,
+                            },
+                        }
+                        for c in calls
+                    ],
+                }
             )
-            msg = resp["output"]["message"]
-            messages.append(msg)
-            if resp.get("stopReason") != "tool_use":
-                return "".join(p.get("text", "") for p in msg["content"])
-            results = []
-            for part in msg["content"]:
-                if "toolUse" in part:
-                    tu = part["toolUse"]
-                    try:
-                        out = self._call_tool(tu["name"], tu.get("input", {}), actor)
-                        results.append(
-                            {
-                                "toolResult": {
-                                    "toolUseId": tu["toolUseId"],
-                                    "content": [{"json": out}],
-                                }
-                            }
-                        )
-                    except Exception as exc:  # noqa: BLE001
-                        results.append(
-                            {
-                                "toolResult": {
-                                    "toolUseId": tu["toolUseId"],
-                                    "status": "error",
-                                    "content": [{"text": str(exc)}],
-                                }
-                            }
-                        )
-            messages.append({"role": "user", "content": results})
+            for call in calls:
+                try:
+                    args = json.loads(call.function.arguments or "{}")
+                    out = self._call_tool(call.function.name, args, actor)
+                except Exception as exc:  # noqa: BLE001 - el error vuelve al modelo como dato
+                    out = {"error": str(exc)}
+                messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": call.id,
+                        "content": json.dumps(out, ensure_ascii=False, default=str),
+                    }
+                )
         return "Se alcanzó el máximo de pasos permitidos sin una respuesta final."

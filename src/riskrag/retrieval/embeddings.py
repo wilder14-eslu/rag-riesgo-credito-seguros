@@ -3,15 +3,16 @@
 - ``HashingEmbedder``: local, determinista y sin dependencias (n-gramas de
   caracteres con hashing). Sirve para pruebas, CI y desarrollo sin costo. No
   es semántico de verdad: no sirve para medir la calidad final.
-- ``BedrockEmbedder``: Titan Text Embeddings V2 o Cohere Embed Multilingual
-  v3 en Bedrock. La elección se hace en la fase 2 midiendo recall@5.
+- ``AzureOpenAIEmbedder``: ``text-embedding-3-large`` (o ``-small``) en Azure
+  OpenAI, reducido a ``embedding_dim`` dimensiones para que coincida con la
+  columna ``VECTOR(1024)`` de pgvector. La elección se hace en la fase 2
+  midiendo recall@5.
 """
 
 from __future__ import annotations
 
 import hashlib
-import json
-from typing import Literal, Protocol
+from typing import Any, Literal, Protocol
 
 import numpy as np
 
@@ -48,48 +49,38 @@ class HashingEmbedder:
         return np.vstack([self._vector(t) for t in texts]) if texts else np.zeros((0, self.dim))
 
 
-class BedrockEmbedder:  # pragma: no cover - requiere AWS
-    def __init__(self, model_id: str, region: str, dim: int = 1024) -> None:
-        import boto3
+class AzureOpenAIEmbedder:
+    """Embeddings de Azure OpenAI. ``client`` se inyecta en las pruebas."""
 
-        self._client = boto3.client("bedrock-runtime", region_name=region)
-        self.model_id = model_id
+    batch_size = 64
+
+    def __init__(self, client: Any, deployment: str, dim: int = 1024) -> None:
+        self._client = client
+        self.deployment = deployment
         self.dim = dim
 
-    def _invoke(self, body: dict) -> dict:
-        resp = self._client.invoke_model(
-            modelId=self.model_id,
-            body=json.dumps(body),
-            contentType="application/json",
-            accept="application/json",
-        )
-        return json.loads(resp["body"].read())
-
     def embed(self, texts: list[str], input_type: InputType = "document") -> np.ndarray:
-        if self.model_id.startswith("cohere."):
-            vectors: list[list[float]] = []
-            kind = "search_document" if input_type == "document" else "search_query"
-            for i in range(0, len(texts), 96):  # límite de lote de Cohere Embed
-                out = self._invoke(
-                    {"texts": texts[i : i + 96], "input_type": kind, "truncate": "END"}
-                )
-                vectors += out["embeddings"]
-            arr = np.asarray(vectors, dtype=np.float32)
-        else:  # Titan Text Embeddings V2
-            arr = np.asarray(
-                [
-                    self._invoke({"inputText": t, "dimensions": self.dim, "normalize": True})[
-                        "embedding"
-                    ]
-                    for t in texts
-                ],
-                dtype=np.float32,
+        # Los modelos text-embedding-3 usan el mismo espacio para documentos y consultas
+        if not texts:
+            return np.zeros((0, self.dim), dtype=np.float32)
+        vectors: list[list[float]] = []
+        for i in range(0, len(texts), self.batch_size):
+            resp = self._client.embeddings.create(
+                model=self.deployment, input=texts[i : i + self.batch_size], dimensions=self.dim
             )
+            vectors += [d.embedding for d in sorted(resp.data, key=lambda d: d.index)]
+        arr = np.asarray(vectors, dtype=np.float32)
         norms = np.linalg.norm(arr, axis=1, keepdims=True)
         return arr / np.where(norms == 0, 1, norms)
 
 
-def build_embedder(backend: str, model_id: str, region: str, dim: int) -> Embedder:
-    if backend == "bedrock":
-        return BedrockEmbedder(model_id, region, dim)
-    return HashingEmbedder(dim=dim)
+def build_embedder(settings: Any, client: Any = None) -> Embedder:
+    if settings.embedder_backend == "azure_openai":
+        from riskrag.generation.llm import build_azure_openai_client
+
+        return AzureOpenAIEmbedder(
+            client or build_azure_openai_client(settings),
+            settings.azure_openai_embed_deployment,
+            settings.embedding_dim,
+        )
+    return HashingEmbedder(dim=settings.embedding_dim)
