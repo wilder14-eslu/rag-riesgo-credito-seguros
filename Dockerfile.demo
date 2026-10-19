@@ -14,16 +14,11 @@ RUN pip install ".[demo]"
 
 COPY configs ./configs
 COPY data/sample ./data/sample
-COPY data/processed ./data/processed
-
-# Asegurar que el índice esté construido y listo en el build
-RUN python -m riskrag.cli ingest data/sample && \
-    mkdir -p /tmp/audit && chown -R app:app /tmp/audit
 
 ENV RISKRAG_PROJECT_ROOT=/app \
     RISKRAG_ENV=local \
     RISKRAG_HOME_PATH=/demo \
-    RISKRAG_INDEX_PATH=/app/data/processed/index.json \
+    RISKRAG_INDEX_PATH=/tmp/riskrag/index.json \
     RISKRAG_AUDIT_LOG_PATH=/tmp/audit/audit.jsonl \
     RISKRAG_AUDIT_STDOUT=true \
     RISKRAG_RATE_LIMIT_PER_MINUTE=20 \
@@ -33,5 +28,6 @@ ENV RISKRAG_PROJECT_ROOT=/app \
 USER 10001
 EXPOSE 10000
 
-# El índice ya viene pre-cargado: Uvicorn arranca de inmediato sin demoras
-CMD ["sh", "-c", "exec uvicorn riskrag.demo.app:app --host 0.0.0.0 --port ${PORT:-10000} --proxy-headers --no-server-header"]
+# El índice se construye al arrancar (unos segundos) y luego se sirve la API con la demo en /demo
+# Render define PORT (10000 por defecto)
+CMD ["sh", "-c", "python -m riskrag.cli ingest data/sample && exec uvicorn riskrag.demo.app:app --host 0.0.0.0 --port ${PORT:-10000} --proxy-headers --no-server-header"]

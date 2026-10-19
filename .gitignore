@@ -25,7 +25,6 @@ data/processed/*
 logs/
 eval/reports/*
 !eval/reports/.gitkeep
-site/
 
 # rsc-harness: estado local de la máquina (sí se versionan .rsc.json, 01-TOOLS y 02-DOCS)
 .rsc/

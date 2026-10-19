@@ -47,7 +47,7 @@ def build_demo(handlers: DemoHandlers) -> gr.Blocks:
             answer = gr.Markdown()
             gr.Examples(EXAMPLES, inputs=question, label="Ejemplos")
 
-            def _ask(q: str, request: gr.Request | None = None) -> str:
+            def _ask(q: str, request: gr.Request) -> str:
                 return handlers.ask(q, _client_id(request))
 
             ask_btn.click(_ask, question, answer)
@@ -59,7 +59,7 @@ def build_demo(handlers: DemoHandlers) -> gr.Blocks:
             c_btn = gr.Button("Clasificar", variant="primary")
             c_out = gr.Markdown()
 
-            def _classify(t: str, d: float, request: gr.Request | None = None) -> str:
+            def _classify(t: str, d: float, request: gr.Request) -> str:
                 return handlers.classify(t, d, _client_id(request))
 
             c_btn.click(_classify, [c_type, c_days], c_out)
@@ -73,9 +73,7 @@ def build_demo(handlers: DemoHandlers) -> gr.Blocks:
             p_btn = gr.Button("Calcular", variant="primary")
             p_out = gr.Markdown()
 
-            def _provision(
-                t: str, c: str, a: float, cv: float, g: str, request: gr.Request | None = None
-            ) -> str:
+            def _provision(t: str, c: str, a: float, cv: float, g: str, request: gr.Request) -> str:
                 return handlers.provision(t, c, a, cv, g, _client_id(request))
 
             p_btn.click(_provision, [p_type, p_cat, p_amount, p_cov, p_guar], p_out)
