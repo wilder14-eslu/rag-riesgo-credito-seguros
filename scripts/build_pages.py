@@ -8,8 +8,6 @@ Genera la carpeta `site/` con:
 from __future__ import annotations
 
 import io
-import json
-import shutil
 import zipfile
 from pathlib import Path
 
