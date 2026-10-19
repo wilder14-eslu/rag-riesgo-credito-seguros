@@ -1,7 +1,8 @@
 # RiskRAG: asistente RAG experto en riesgo crediticio y seguros
 
 [![CI](https://github.com/wilder14-eslu/rag-riesgo-credito-seguros/actions/workflows/ci.yml/badge.svg)](https://github.com/wilder14-eslu/rag-riesgo-credito-seguros/actions/workflows/ci.yml)
-[![Demo](https://img.shields.io/badge/demo-en%20vivo-46E3B7?logo=render&logoColor=white)](https://riskrag-demo.onrender.com)
+[![Demo GitHub Pages](https://img.shields.io/badge/demo-GitHub%20Pages%20(0%20cold--start)-2ea44f?logo=githubpages&logoColor=white)](https://wilder14-eslu.github.io/rag-riesgo-credito-seguros/)
+[![Demo Render](https://img.shields.io/badge/demo-Render%20(API)-46E3B7?logo=render&logoColor=white)](https://riskrag-demo.onrender.com)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
 ![MCP](https://img.shields.io/badge/MCP-2%20servidores-6b6a66)
@@ -24,7 +25,8 @@
 
 ![Demo de RiskRAG: pregunta de provisión respondida con la herramienta determinista y la cita de la norma](docs/img/demo.png)
 
-**[Probar la demo](https://riskrag-demo.onrender.com)** (gratuita en Render, con los backends locales, sin Azure): interfaz para preguntar, clasificar deudores y calcular provisiones, más la API en [`/docs`](https://riskrag-demo.onrender.com/docs). Si estuvo inactiva, la primera carga tarda cerca de un minuto. Detalle en [`docs/10_demo_render.md`](docs/10_demo_render.md).
+* **[Probar la demo en GitHub Pages](https://wilder14-eslu.github.io/rag-riesgo-credito-seguros/)** (**0 cold-start**, sin esperas): corre directo en el navegador con Gradio-Lite y el índice pre-cargado. Detalle en [`docs/10_demo_github_pages.md`](docs/10_demo_github_pages.md).
+* **[Demo y API en Render](https://riskrag-demo.onrender.com)** (con Swagger en `/docs`): si estuvo inactiva, la primera carga tarda ~1 minuto al despertar el contenedor. Detalle en [`docs/10_demo_render.md`](docs/10_demo_render.md).
 
 ## Qué hace, con ejemplos reales
 
