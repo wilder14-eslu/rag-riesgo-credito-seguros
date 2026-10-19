@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RiskRAG: normativa de riesgo crediticio con fuentes</title>
+  <meta name="description" content="Asistente RAG sobre normativa SBS, IFRS 9 e IFRS 17. Responde con citas, calcula provisiones con aritmética exacta y estima la probabilidad de default con un modelo ONNX. Todo corre en tu navegador.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231b3fa0'/%3E%3Cpath d='M9 8h9a5 5 0 0 1 0 10h-3l7 6h-5l-6-6V8zm4 4v3h5a1.5 1.5 0 0 0 0-3z' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <a class="skip" href="#main">Ir al contenido</a>
+
+  <header class="top">
+    <div class="top-inner">
+      <a class="brand" href="./" aria-label="RiskRAG, inicio">RiskRAG</a>
+      <p class="tagline">Normativa SBS, IFRS 9 e IFRS 17 con fuentes</p>
+      <nav class="top-links" aria-label="Enlaces del proyecto">
+        <a href="https://github.com/wilder14-eslu/rag-riesgo-credito-seguros">Código en GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="shell">
+    <section class="bench" aria-labelledby="titulo">
+      <h1 id="titulo">Pregunta a la normativa. Cada cifra sale con su fuente.</h1>
+      <p class="lede">Un asistente que cita el fragmento exacto, se abstiene cuando no tiene sustento y no deja que un modelo haga la aritmética regulatoria. Corre completo en esta pestaña: tu consulta no sale del navegador.</p>
+
+      <div class="tabs" role="tablist" aria-label="Herramientas">
+        <button role="tab" id="tab-ask" aria-controls="panel-ask" aria-selected="true">Preguntar</button>
+        <button role="tab" id="tab-classify" aria-controls="panel-classify" aria-selected="false" tabindex="-1">Clasificar</button>
+        <button role="tab" id="tab-provision" aria-controls="panel-provision" aria-selected="false" tabindex="-1">Provisión</button>
+        <button role="tab" id="tab-score" aria-controls="panel-score" aria-selected="false" tabindex="-1">Score ONNX</button>
+      </div>
+
+      <div class="panel" role="tabpanel" id="panel-ask" aria-labelledby="tab-ask">
+        <form id="form-ask" autocomplete="off">
+          <label for="q">Tu pregunta</label>
+          <textarea id="q" rows="3" maxlength="2000" placeholder="Por ejemplo: ¿Qué categoría corresponde a un crédito de consumo con 45 días de atraso?"></textarea>
+          <div class="row">
+            <button class="primary" type="submit" id="btn-ask" disabled>Preguntar</button>
+            <span class="hint" id="load-state" role="status">Cargando índice…</span>
+          </div>
+        </form>
+        <h2 class="mini">Prueba con estos casos</h2>
+        <ul class="examples" id="examples"></ul>
+      </div>
+
+      <div class="panel" role="tabpanel" id="panel-classify" aria-labelledby="tab-classify" hidden>
+        <form id="form-classify">
+          <label for="c-type">Tipo de crédito</label>
+          <select id="c-type"></select>
+          <label for="c-days">Días de atraso</label>
+          <input id="c-days" type="number" inputmode="numeric" min="0" max="10000" step="1" value="45">
+          <div class="row"><button class="primary" type="submit">Clasificar</button></div>
+        </form>
+        <p class="note">Aplica la Res. SBS 11356-2008 con tablas versionadas. Para deudores no minoristas la norma exige analizar capacidad de pago, así que la herramienta lo dice en lugar de inventar una categoría.</p>
+      </div>
+
+      <div class="panel" role="tabpanel" id="panel-provision" aria-labelledby="tab-provision" hidden>
+        <form id="form-provision">
+          <label for="p-type">Tipo de crédito</label>
+          <select id="p-type"></select>
+          <label for="p-cat">Categoría del deudor</label>
+          <select id="p-cat"></select>
+          <div class="pair">
+            <div><label for="p-amount">Monto (S/)</label><input id="p-amount" type="number" inputmode="decimal" min="0" step="0.01" value="10000"></div>
+            <div><label for="p-covered">Monto cubierto (S/)</label><input id="p-covered" type="number" inputmode="decimal" min="0" step="0.01" value="0"></div>
+          </div>
+          <label for="p-guar">Garantía</label>
+          <select id="p-guar"></select>
+          <div class="row"><button class="primary" type="submit">Calcular provisión</button></div>
+        </form>
+        <p class="note">Cálculo simplificado con fines educativos. Usa aritmética decimal con redondeo a centavos, igual que la versión en Python.</p>
+      </div>
+
+      <div class="panel" role="tabpanel" id="panel-score" aria-labelledby="tab-score" hidden>
+        <p class="note first">Modelo XGBoost de credit-risk-ml-platform exportado a ONNX. Se descarga una vez y corre en tu navegador con onnxruntime-web.</p>
+        <form id="form-score"><div id="score-fields" class="score-grid"></div>
+          <div class="row"><button class="primary" type="submit" id="btn-score">Calcular probabilidad</button><span class="hint" id="score-state" role="status"></span></div>
+        </form>
+      </div>
+    </section>
+
+    <section class="out" aria-live="polite" aria-label="Resultado" id="out">
+      <div class="empty" id="empty">
+        <p class="empty-title">Aquí aparece la respuesta con sus fuentes.</p>
+        <p>Elige un caso de la lista o escribe tu pregunta. Hay dos casos difíciles: un intento de inyección de prompt y una pregunta que el corpus no cubre, para que veas cómo se bloquea y cómo se abstiene.</p>
+      </div>
+    </section>
+  </main>
+
+  <section class="facts" aria-labelledby="facts-title">
+    <div class="facts-inner">
+      <h2 id="facts-title">Qué corre en esta página</h2>
+      <dl class="spec">
+        <div><dt>Recuperación</dt><dd>Embeddings por hashing + BM25, fusionados con RRF y reordenados por cobertura léxica. Sin llamadas a ningún LLM: las respuestas extraen oraciones del texto y las citan.</dd></div>
+        <div><dt>Seguridad</dt><dd>Detección de inyección de prompt, enmascarado de DNI, RUC, tarjetas y correos, verificación de que cada oración tenga respaldo, y abstención si la evidencia es débil.</dd></div>
+        <div><dt>Modelo de default</dt><dd>XGBoost en ONNX (271 KB). Se verificó contra el modelo original en 4,000 filas con diferencia máxima de 5×10⁻⁷.</dd></div>
+        <div><dt>Equivalencia con Python</dt><dd>Una prueba automática compara este motor con el de Python en cada despliegue: preguntas, clasificaciones y provisiones deben coincidir carácter por carácter.</dd></div>
+      </dl>
+      <div id="eval" class="evalbox" hidden></div>
+      <p class="fine">El corpus es de ejemplo y las cifras sirven para mostrar el funcionamiento, no como referencia regulatoria. La probabilidad de default viene de un modelo entrenado con datos públicos de Kaggle y no debe usarse para decisiones reales sobre personas. <span id="built"></span></p>
+    </div>
+  </section>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

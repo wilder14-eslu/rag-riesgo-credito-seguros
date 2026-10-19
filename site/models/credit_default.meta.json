@@ -1,0 +1,96 @@
+{
+  "model": "XGBoost (champion de credit-risk-ml-platform)",
+  "onnx_file": "credit_default.onnx",
+  "onnx_sha256": "4c40480111d14b7e883b84e1ff5707e964a9e006205c2a7b0771c097a9785ff6",
+  "input_name": "features",
+  "output_name": "probabilities",
+  "threshold": 0.155,
+  "risk_bands": {
+    "bajo_menor_a": 0.1,
+    "medio_menor_a": 0.3
+  },
+  "verified_rows": 4000,
+  "verified_max_abs_diff": 4.76837158203125e-07,
+  "features": [
+    {
+      "name": "revolving_utilization_unsecured",
+      "label": "Utilización de líneas de crédito no garantizadas",
+      "description": "Saldo total en tarjetas de crédito y líneas personales dividido entre la suma de los límites de crédito disponibles.",
+      "min": 0.0,
+      "max": null,
+      "median": 0.15321068
+    },
+    {
+      "name": "age",
+      "label": "Edad",
+      "description": "Edad del solicitante, en años.",
+      "min": 18.0,
+      "max": 120.0,
+      "median": 52.0
+    },
+    {
+      "name": "number_of_time_30_59_days_past_due",
+      "label": "Atrasos de 30-59 días",
+      "description": "Número de veces que el solicitante se ha atrasado entre 30 y 59 días en los últimos 2 años.",
+      "min": 0.0,
+      "max": null,
+      "median": 0.0
+    },
+    {
+      "name": "debt_ratio",
+      "label": "Ratio de endeudamiento",
+      "description": "Pagos mensuales de deuda, pensión y gastos de manutención, divididos entre el ingreso bruto mensual.",
+      "min": 0.0,
+      "max": null,
+      "median": 0.366829146
+    },
+    {
+      "name": "monthly_income",
+      "label": "Ingreso mensual",
+      "description": "Ingreso mensual bruto del solicitante.",
+      "min": 0.0,
+      "max": null,
+      "median": 5400.0
+    },
+    {
+      "name": "number_open_credit_lines",
+      "label": "Líneas de crédito abiertas",
+      "description": "Número de préstamos abiertos (por ejemplo, vehicular o hipotecario) y líneas de crédito abiertas (por ejemplo, tarjetas de crédito).",
+      "min": 0.0,
+      "max": null,
+      "median": 8.0
+    },
+    {
+      "name": "number_of_times_90_days_late",
+      "label": "Atrasos de 90+ días",
+      "description": "Número de veces que el solicitante se ha atrasado 90 días o más.",
+      "min": 0.0,
+      "max": null,
+      "median": 0.0
+    },
+    {
+      "name": "number_real_estate_loans",
+      "label": "Préstamos hipotecarios",
+      "description": "Número de préstamos hipotecarios y de bienes raíces, incluidas líneas de crédito sobre el valor de la vivienda.",
+      "min": 0.0,
+      "max": null,
+      "median": 1.0
+    },
+    {
+      "name": "number_of_time_60_89_days_past_due",
+      "label": "Atrasos de 60-89 días",
+      "description": "Número de veces que el solicitante se ha atrasado entre 60 y 89 días en los últimos 2 años.",
+      "min": 0.0,
+      "max": null,
+      "median": 0.0
+    },
+    {
+      "name": "number_dependents",
+      "label": "Número de dependientes",
+      "description": "Número de dependientes económicos del solicitante (sin contarse a sí mismo).",
+      "min": 0.0,
+      "max": null,
+      "median": 0.0
+    }
+  ]
+}

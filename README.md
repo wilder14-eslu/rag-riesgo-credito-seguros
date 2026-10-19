@@ -1,7 +1,7 @@
 # RiskRAG: asistente RAG experto en riesgo crediticio y seguros
 
 [![CI](https://github.com/wilder14-eslu/rag-riesgo-credito-seguros/actions/workflows/ci.yml/badge.svg)](https://github.com/wilder14-eslu/rag-riesgo-credito-seguros/actions/workflows/ci.yml)
-[![Demo](https://img.shields.io/badge/demo-en%20vivo-46E3B7?logo=render&logoColor=white)](https://riskrag-demo.onrender.com)
+[![Demo](https://img.shields.io/badge/demo-en%20vivo-1b3fa0?logo=github&logoColor=white)](https://wilder14-eslu.github.io/rag-riesgo-credito-seguros/)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
 ![MCP](https://img.shields.io/badge/MCP-2%20servidores-6b6a66)
@@ -24,7 +24,7 @@
 
 ![Demo de RiskRAG: pregunta de provisión respondida con la herramienta determinista y la cita de la norma](docs/img/demo.png)
 
-**[Probar la demo](https://riskrag-demo.onrender.com)** (gratuita en Render, con los backends locales, sin Azure): interfaz para preguntar, clasificar deudores y calcular provisiones, más la API en [`/docs`](https://riskrag-demo.onrender.com/docs). Si estuvo inactiva, la primera carga tarda cerca de un minuto. Detalle en [`docs/10_demo_render.md`](docs/10_demo_render.md).
+**[Probar la demo](https://wilder14-eslu.github.io/rag-riesgo-credito-seguros/)** (GitHub Pages, sin servidor ni arranque en frío): corre completa en el navegador, con los backends locales y sin Azure. Permite preguntar con fuentes citadas, clasificar deudores, calcular provisiones y estimar la probabilidad de default con un modelo XGBoost exportado a ONNX. Detalle en [`docs/11_demo_pages.md`](docs/11_demo_pages.md). La versión anterior en Render sigue documentada en [`docs/10_demo_render.md`](docs/10_demo_render.md).
 
 ## Qué hace, con ejemplos reales
 
@@ -172,7 +172,8 @@ La infraestructura completa está en Terraform ([`infra/terraform/`](infra/terra
 | [Seguridad](docs/04_seguridad.md) | Modelo de amenazas OWASP LLM 2025 y STRIDE |
 | [Evaluación](docs/05_evaluacion.md) | Métricas, resultados, historial de hallazgos y protocolo de la fase 2 |
 | [Despliegue en Azure](docs/09_despliegue_azure.md) | Pasos, recursos de Terraform, costos y diferencias con el diseño anterior en AWS |
-| [Demo en Render](docs/10_demo_render.md) | Demo pública gratuita con backends locales: interfaz Gradio y API |
+| [Demo en GitHub Pages](docs/11_demo_pages.md) | Demo pública sin servidor: motor en JavaScript, paridad con Python y modelo ONNX |
+| [Demo en Render](docs/10_demo_render.md) | Versión anterior con backends locales: interfaz Gradio y API |
 | [Hoja de ruta](docs/07_hoja_de_ruta.md) | Fases, puertas de calidad y estado |
 
 ## Limitaciones conocidas

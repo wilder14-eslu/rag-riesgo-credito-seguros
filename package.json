@@ -1,0 +1,12 @@
+{
+  "name": "riskrag-site",
+  "private": true,
+  "type": "module",
+  "description": "Pruebas de la demo estática de RiskRAG (paridad con Python y modelo ONNX)",
+  "scripts": {
+    "test": "node --test \"tests/js/*.test.mjs\""
+  },
+  "devDependencies": {
+    "onnxruntime-web": "1.22.0"
+  }
+}

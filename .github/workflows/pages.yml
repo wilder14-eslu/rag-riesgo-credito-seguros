@@ -1,0 +1,68 @@
+name: Demo en GitHub Pages
+
+# Publica la demo estática (site/) en cada push a main, solo si pasan las puertas de calidad:
+# evaluación del RAG, paridad Python y JavaScript, y verificación del modelo ONNX.
+# Requiere una sola vez: Settings > Pages > Source = "GitHub Actions".
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  construir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Instalar dependencias de Python
+        run: pip install -e ".[dev]"
+
+      - name: Indexar el corpus y evaluar (puertas de calidad)
+        run: |
+          python -m riskrag.cli ingest data/sample
+          python -m eval.run_eval
+
+      - name: Exportar índice, glosario y tablas para el navegador
+        run: python scripts/build_pages.py --sin-ingesta
+
+      - name: Generar casos de referencia con el motor de Python
+        run: python scripts/make_golden.py
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Instalar dependencias de prueba de JavaScript
+        run: npm ci
+      - name: Probar que el navegador responde igual que Python y que ONNX es fiel
+        run: npm test
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  publicar:
+    needs: construir
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

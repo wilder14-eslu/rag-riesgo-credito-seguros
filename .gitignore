@@ -28,3 +28,8 @@ eval/reports/*
 
 # rsc-harness: estado local de la máquina (sí se versionan .rsc.json, 01-TOOLS y 02-DOCS)
 .rsc/
+
+# Página estática: se generan en el workflow o con scripts/build_pages.py y make_golden.py
+site/data/
+tests/js/golden.json
+node_modules/
