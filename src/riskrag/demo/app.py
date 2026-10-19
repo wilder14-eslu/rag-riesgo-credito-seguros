@@ -73,7 +73,9 @@ def build_demo(handlers: DemoHandlers) -> gr.Blocks:
             p_btn = gr.Button("Calcular", variant="primary")
             p_out = gr.Markdown()
 
-            def _provision(t: str, c: str, a: float, cv: float, g: str, request: gr.Request | None = None) -> str:
+            def _provision(
+                t: str, c: str, a: float, cv: float, g: str, request: gr.Request | None = None
+            ) -> str:
                 return handlers.provision(t, c, a, cv, g, _client_id(request))
 
             p_btn.click(_provision, [p_type, p_cat, p_amount, p_cov, p_guar], p_out)
